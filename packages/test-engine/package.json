@@ -1,0 +1,28 @@
+{
+  "name": "@auto-test/test-engine",
+  "version": "1.0.0",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "bin": {
+    "auto-test": "./src/cli.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@auto-test/project-config": "*",
+    "@auto-test/report-engine": "*",
+    "@auto-test/test-case-schema": "*",
+    "@playwright/test": "^1.49.1",
+    "commander": "^12.1.0",
+    "picocolors": "^1.1.1",
+    "pixelmatch": "^6.0.0",
+    "playwright": "^1.49.1",
+    "pngjs": "^7.0.0"
+  },
+  "devDependencies": {
+    "@types/pixelmatch": "^5.2.6",
+    "@types/pngjs": "^6.0.5",
+    "typescript": "^5.7.3"
+  }
+}

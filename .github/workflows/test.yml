@@ -1,0 +1,45 @@
+name: Dynamic Auto Testing Platform CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    name: Run Automated Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Start Mock Application Server
+        run: |
+          npm run dev:demo &
+          npx wait-on http://127.0.0.1:3000/api/health --timeout 30000
+
+      - name: Run Test Engine via CLI (HRM Project)
+        run: |
+          npm run test:cli -- --project=hrm --type=api
+
+      - name: Upload Test Reports & Evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-execution-reports
+          path: projects/*/reports/
+          retention-days: 14

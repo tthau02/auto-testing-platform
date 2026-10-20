@@ -1,0 +1,25 @@
+{
+  "id": "VISUAL_LOGIN_PAGE_001",
+  "name": "Visual snapshot comparison of Login page",
+  "description": "Captures screenshot of Login page across desktop and mobile viewports, comparing against baseline",
+  "type": "visual",
+  "module": "Visual Regression",
+  "priority": "medium",
+  "tags": ["visual", "login"],
+  "url": "/login",
+  "snapshotName": "login_page",
+  "threshold": 0.05,
+  "fullPage": true,
+  "viewports": [
+    {
+      "name": "desktop",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "name": "mobile",
+      "width": 390,
+      "height": 844
+    }
+  ]
+}

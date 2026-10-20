@@ -1,0 +1,26 @@
+{
+  "name": "auto-testing-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Dynamic Auto Testing Platform for Multi-Project Web & API Automation",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "start": "tsx apps/local-service/src/index.ts",
+    "dev": "concurrently -k -p \"[{name}]\" -n \"SERVICE,DEMO,DASHBOARD\" -c \"cyan,magenta,green\" \"npm run dev --workspace=local-service\" \"npm run dev --workspace=demo-target\" \"npm run dev --workspace=dashboard\"",
+    "dev:service": "npm run dev --workspace=local-service",
+    "dev:dashboard": "npm run dev --workspace=dashboard",
+    "dev:demo": "npm run dev --workspace=demo-target",
+    "build": "npm run build --workspaces --if-present",
+    "test:cli": "tsx packages/test-engine/src/cli.ts",
+    "test": "tsx packages/test-engine/src/cli.ts",
+    "install:browsers": "npx playwright install chromium"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "tsx": "^4.19.3",
+    "typescript": "^5.7.3"
+  }
+}

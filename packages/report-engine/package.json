@@ -1,0 +1,15 @@
+{
+  "name": "@auto-test/report-engine",
+  "version": "1.0.0",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@auto-test/test-case-schema": "*"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3"
+  }
+}

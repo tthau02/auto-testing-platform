@@ -1,0 +1,60 @@
+{
+  "id": "API_AUTH_AND_PRODUCTS_001",
+  "name": "Authenticate and query products catalog",
+  "description": "Authenticates user via /api/auth/login, extracts token, and queries protected products endpoint",
+  "type": "api",
+  "module": "Authentication & Products",
+  "priority": "critical",
+  "tags": ["smoke", "api", "auth"],
+  "steps": [
+    {
+      "name": "Login with valid credentials",
+      "method": "POST",
+      "endpoint": "/api/auth/login",
+      "body": {
+        "username": "{{TEST_USERNAME}}",
+        "password": "{{TEST_PASSWORD}}"
+      },
+      "extractVariables": [
+        {
+          "name": "AUTH_TOKEN",
+          "path": "token"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "status",
+          "expected": 200
+        },
+        {
+          "type": "responseTime",
+          "maxMs": 2000
+        },
+        {
+          "type": "fieldEquals",
+          "path": "user.role",
+          "expected": "Administrator"
+        }
+      ]
+    },
+    {
+      "name": "Fetch products list",
+      "method": "GET",
+      "endpoint": "/api/products",
+      "headers": {
+        "Authorization": "Bearer {{AUTH_TOKEN}}"
+      },
+      "assertions": [
+        {
+          "type": "status",
+          "expected": 200
+        },
+        {
+          "type": "fieldType",
+          "path": "",
+          "expected": "array"
+        }
+      ]
+    }
+  ]
+}

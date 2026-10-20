@@ -1,0 +1,37 @@
+{
+  "id": "hrm-enterprise",
+  "name": "HRM Enterprise Portal",
+  "description": "Hệ thống Quản lý Nhân sự & Tiền lương HRM Enterprise",
+  "baseUrl": "http://localhost:5175",
+  "apiBaseUrl": "http://localhost:5175",
+  "environment": "local",
+  "testDirectories": [
+    "test-cases/ui",
+    "test-cases/visual"
+  ],
+  "features": {
+    "uiTesting": true,
+    "apiTesting": false,
+    "visualTesting": true
+  },
+  "viewports": [
+    {
+      "name": "desktop",
+      "width": 1440,
+      "height": 900
+    }
+  ],
+  "timeouts": {
+    "test": 30000,
+    "action": 10000,
+    "navigation": 30000
+  },
+  "variables": {},
+  "security": {
+    "allowlistHosts": [
+      "localhost",
+      "127.0.0.1"
+    ],
+    "preventDestructiveActions": true
+  }
+}

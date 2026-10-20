@@ -1,0 +1,50 @@
+{
+  "id": "UI_SEARCH_FILTER_002",
+  "name": "Tìm kiếm nhân viên theo tên và kiểm tra tính năng Làm mới",
+  "description": "Nhập tên nhân viên vào ô tìm kiếm, bấm Tìm kiếm, xác minh kết quả và bấm Làm mới để reset bảng",
+  "type": "ui",
+  "module": "Tìm kiếm & Lọc",
+  "priority": "high",
+  "tags": ["filter", "search"],
+  "startUrl": "/employees",
+  "steps": [
+    {
+      "action": "fill",
+      "target": {
+        "placeholder": "Tìm theo tên, email, mã NV..."
+      },
+      "value": "Lê Minh Tuấn",
+      "description": "Nhập 'Lê Minh Tuấn' vào ô tìm kiếm"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "Tìm kiếm"
+      },
+      "description": "Click nút 'Tìm kiếm'"
+    },
+    {
+      "action": "assertVisible",
+      "target": {
+        "text": "Lê Minh Tuấn"
+      },
+      "description": "Xác minh kết quả tìm kiếm hiển thị Lê Minh Tuấn"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "Làm mới"
+      },
+      "description": "Click nút 'Làm mới' để đặt lại bộ lọc"
+    },
+    {
+      "action": "assertVisible",
+      "target": {
+        "text": "Trần Thị Thu Hà"
+      },
+      "description": "Xác minh danh sách đã được reset và hiển thị đầy đủ nhân sự khác"
+    }
+  ]
+}

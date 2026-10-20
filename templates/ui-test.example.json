@@ -1,0 +1,49 @@
+{
+  "id": "UI_LOGIN_001",
+  "name": "Login with valid credentials and verify dashboard",
+  "description": "User enters username and password, clicks login, and asserts navigation to dashboard",
+  "type": "ui",
+  "module": "Authentication",
+  "priority": "critical",
+  "tags": ["smoke", "auth", "login"],
+  "startUrl": "/login",
+  "steps": [
+    {
+      "action": "fill",
+      "target": {
+        "placeholder": "Enter your username"
+      },
+      "value": "{{TEST_USERNAME}}",
+      "description": "Enter test username"
+    },
+    {
+      "action": "fill",
+      "target": {
+        "placeholder": "Enter your password"
+      },
+      "value": "{{TEST_PASSWORD}}",
+      "description": "Enter test password"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "Login"
+      },
+      "description": "Click Login button"
+    },
+    {
+      "action": "assertUrl",
+      "expected": "**/dashboard",
+      "description": "Assert URL navigates to /dashboard"
+    },
+    {
+      "action": "assertText",
+      "target": {
+        "selector": ".welcome-banner h2"
+      },
+      "expected": "Welcome, Admin User!",
+      "description": "Verify welcome banner displays user name"
+    }
+  ]
+}

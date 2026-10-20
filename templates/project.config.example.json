@@ -1,0 +1,56 @@
+{
+  "id": "hrm",
+  "name": "HRM Enterprise Portal",
+  "description": "Human Resource Management system portal and backend services",
+  "baseUrl": "http://localhost:3000",
+  "apiBaseUrl": "http://localhost:3000",
+  "environment": "local",
+  "environments": {
+    "local": {
+      "baseUrl": "http://localhost:3000",
+      "apiBaseUrl": "http://localhost:3000"
+    },
+    "staging": {
+      "baseUrl": "https://staging.internal-corp.test",
+      "apiBaseUrl": "https://staging-api.internal-corp.test"
+    }
+  },
+  "testDirectories": [
+    "test-cases/ui",
+    "test-cases/api",
+    "test-cases/visual"
+  ],
+  "features": {
+    "uiTesting": true,
+    "apiTesting": true,
+    "visualTesting": true
+  },
+  "viewports": [
+    {
+      "name": "desktop",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "name": "mobile",
+      "width": 390,
+      "height": 844
+    }
+  ],
+  "timeouts": {
+    "test": 30000,
+    "action": 10000,
+    "navigation": 30000
+  },
+  "variables": {
+    "TEST_USERNAME": "admin",
+    "TEST_PASSWORD": "password123"
+  },
+  "security": {
+    "allowlistHosts": [
+      "localhost",
+      "127.0.0.1"
+    ],
+    "preventDestructiveActions": true
+  }
+}

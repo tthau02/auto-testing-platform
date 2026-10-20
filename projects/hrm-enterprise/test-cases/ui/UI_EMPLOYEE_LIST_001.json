@@ -1,0 +1,57 @@
+{
+  "id": "UI_EMPLOYEE_LIST_001",
+  "name": "Kiểm tra hiển thị danh sách nhân viên và các nút điều khiển",
+  "description": "Truy cập /employees, xác minh tiêu đề Quản lý Nhân viên, danh sách nhân sự mẫu và các nút Thêm mới, Tìm kiếm, Làm mới",
+  "type": "ui",
+  "module": "Quản lý Nhân sự",
+  "priority": "critical",
+  "tags": ["smoke", "employees"],
+  "startUrl": "/employees",
+  "steps": [
+    {
+      "action": "assertVisible",
+      "target": {
+        "text": "Quản lý Nhân viên"
+      },
+      "description": "Xác minh tiêu đề trang 'Quản lý Nhân viên' hiển thị"
+    },
+    {
+      "action": "assertVisible",
+      "target": {
+        "role": "button",
+        "name": "Thêm nhân viên mới"
+      },
+      "description": "Xác minh nút 'Thêm nhân viên mới' hiển thị"
+    },
+    {
+      "action": "assertVisible",
+      "target": {
+        "role": "button",
+        "name": "Tìm kiếm"
+      },
+      "description": "Xác minh nút 'Tìm kiếm' hiển thị"
+    },
+    {
+      "action": "assertVisible",
+      "target": {
+        "role": "button",
+        "name": "Làm mới"
+      },
+      "description": "Xác minh nút 'Làm mới' hiển thị"
+    },
+    {
+      "action": "assertVisible",
+      "target": {
+        "text": "Lê Minh Tuấn"
+      },
+      "description": "Xác minh nhân viên 'Lê Minh Tuấn' có trong bảng dữ liệu"
+    },
+    {
+      "action": "assertVisible",
+      "target": {
+        "text": "EMP-001"
+      },
+      "description": "Xác minh mã nhân viên 'EMP-001' hiển thị"
+    }
+  ]
+}
