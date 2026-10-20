@@ -27,10 +27,13 @@ export interface TestCaseItem {
 export interface RunOptions {
   projectId: string;
   environment?: string;
+  environmentId?: string;
+  dashboardUrl?: string;
   testCaseIds?: string[];
   typeFilter?: 'ui' | 'api' | 'visual' | 'all';
   headless?: boolean;
   slowMo?: number;
+  updateBaselines?: boolean;
 }
 
 const API_BASE = '/api';
@@ -147,7 +150,7 @@ export const api = {
     return res.json();
   },
 
-  async getReportDetail(projectId: string, runId: string): Promise<{ summary: any; markdown: string }> {
+  async getReportDetail(projectId: string, runId: string): Promise<{ summary: any; markdown: string; junit: string | null; html: string | null }> {
     const res = await fetch(`${API_BASE}/projects/${projectId}/reports/${runId}`);
     if (!res.ok) throw new Error(await res.text());
     return res.json();

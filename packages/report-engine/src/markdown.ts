@@ -101,6 +101,9 @@ export function generateMarkdownReport(summary: TestRunSummary): string {
   if (metadata?.playwrightHtmlReportPath) {
     md += `- [🌐 Open Playwright HTML Report](${metadata.playwrightHtmlReportPath})\n`;
   }
+  if (metadata?.htmlReportPath) {
+    md += `- [🌐 Open HTML Summary Report](${metadata.htmlReportPath})\n`;
+  }
   if (metadata?.junitXmlPath) {
     md += `- [📄 JUnit XML Report](${metadata.junitXmlPath})\n`;
   }

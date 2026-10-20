@@ -26,7 +26,12 @@ const PROJECTS_ROOT = path.join(WORKSPACE_ROOT, 'projects');
 
 fs.mkdirSync(PROJECTS_ROOT, { recursive: true });
 
-app.use(cors());
+const dashboardOrigins = new Set(['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:5174', 'http://127.0.0.1:5174']);
+app.use(cors({
+  origin(origin, callback) {
+    callback(null, !origin || dashboardOrigins.has(origin));
+  }
+}));
 app.use(express.json());
 
 // --- Health / Status ---
@@ -255,7 +260,9 @@ app.delete('/api/projects/:id/test-cases/:testId', (req, res) => {
 
 app.post('/api/runs', (req, res) => {
   try {
-    const { projectId, environment, testCaseIds, typeFilter } = req.body;
+    const { projectId, testCaseIds, typeFilter } = req.body;
+    const environment = req.body.environmentId || req.body.environment;
+    const dashboardUrl = typeof req.body.dashboardUrl === 'string' ? req.body.dashboardUrl : 'unknown';
     const headless = req.body.headless === true; // Default to false (Headed mode) so user can watch browser actions!
     const slowMo = req.body.slowMo !== undefined ? Number(req.body.slowMo) : (headless ? 0 : 600);
     if (!projectId) {
@@ -268,6 +275,25 @@ app.post('/api/runs', (req, res) => {
       res.status(404).json({ error: `Project ${projectId} not found` });
       return;
     }
+
+    if (!Array.isArray(testCaseIds) || testCaseIds.length === 0) {
+      res.status(400).json({ error: 'Select at least one test case before starting execution.' });
+      return;
+    }
+
+    let targetConfig;
+    try {
+      targetConfig = loadProjectConfig(projectDir, environment);
+    } catch (error) {
+      res.status(400).json({ error: (error as Error).message });
+      return;
+    }
+
+    console.info(`[Execute Test] Dashboard URL: ${dashboardUrl}`);
+    console.info(`[Execute Test] Project: ${targetConfig.name} (${targetConfig.id}); environment: ${targetConfig.environment}`);
+    console.info(`[Execute Test] Target baseURL: ${targetConfig.baseUrl}`);
+    console.info(`[Execute Test] Browser mode: ${headless ? 'headless' : 'headed'}; slowMo: ${slowMo}ms`);
+    console.info(`[Execute Test] Selected test case IDs: ${testCaseIds.join(', ')}`);
 
     const runId = `${new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)}_${Math.random().toString(36).slice(2, 6)}`;
     const activeRun = processManager.createRun(runId, projectId);
@@ -286,7 +312,9 @@ app.post('/api/runs', (req, res) => {
       if (msg.type === 'EVENT') {
         processManager.emitEvent(runId, msg.payload);
       } else if (msg.type === 'DONE') {
-        activeRun.status = msg.summary.status === 'PASS' ? 'COMPLETED' : 'ERROR';
+        activeRun.status = msg.summary.status === 'CANCELLED'
+          ? 'CANCELLED'
+          : msg.summary.status === 'PASS' ? 'COMPLETED' : 'ERROR';
         activeRun.summary = msg.summary;
       } else if (msg.type === 'ERROR') {
         activeRun.status = 'ERROR';
@@ -304,10 +332,12 @@ app.post('/api/runs', (req, res) => {
     child.send({
       projectDir,
       environment,
+      dashboardUrl,
       testCaseIds,
       typeFilter,
       headless,
-      slowMo
+      slowMo,
+      updateBaselines: req.body.updateBaselines === true
     });
 
     res.status(202).json({
@@ -363,7 +393,8 @@ app.get('/api/runs/:runId/events', (req, res) => {
     res.write(`data: ${JSON.stringify(event)}\n\n`);
   }
 
-  if (run.status === 'COMPLETED' || run.status === 'ERROR' || run.status === 'CANCELLED') {
+  if ((run.status === 'COMPLETED' || run.status === 'ERROR' || run.status === 'CANCELLED') &&
+      run.events.some(event => event.type === 'RUN_COMPLETED')) {
     res.end();
     return;
   }
@@ -424,10 +455,14 @@ app.get('/api/projects/:id/reports/:runId', (req, res) => {
 
     const reportMdPath = path.join(runDir, 'report.md');
     const mdContent = fs.existsSync(reportMdPath) ? fs.readFileSync(reportMdPath, 'utf-8') : null;
+    const junitPath = path.join(runDir, 'junit.xml');
+    const htmlPath = path.join(runDir, 'report.html');
 
     res.json({
       summary,
-      markdown: mdContent
+      markdown: mdContent,
+      junit: fs.existsSync(junitPath) ? fs.readFileSync(junitPath, 'utf-8') : null,
+      html: fs.existsSync(htmlPath) ? fs.readFileSync(htmlPath, 'utf-8') : null
     });
   } catch (err: any) {
     res.status(500).json({ error: err.message });

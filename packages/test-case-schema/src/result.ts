@@ -48,7 +48,7 @@ export const TestRunSummarySchema = z.object({
   startTime: z.string(),
   endTime: z.string(),
   durationMs: z.number().nonnegative(),
-  status: z.enum(['PASS', 'FAIL', 'ERROR']),
+  status: z.enum(['PASS', 'FAIL', 'ERROR', 'CANCELLED']),
   counts: z.object({
     total: z.number().int().nonnegative(),
     pass: z.number().int().nonnegative(),
@@ -61,6 +61,7 @@ export const TestRunSummarySchema = z.object({
     os: z.string().optional(),
     cliCommand: z.string().optional(),
     playwrightHtmlReportPath: z.string().optional(),
+    htmlReportPath: z.string().optional(),
     junitXmlPath: z.string().optional(),
     markdownReportPath: z.string().optional()
   }).optional()

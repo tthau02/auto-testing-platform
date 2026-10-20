@@ -13,6 +13,7 @@
     "dev:service": "npm run dev --workspace=local-service",
     "dev:dashboard": "npm run dev --workspace=dashboard",
     "build": "npm run build --workspaces --if-present",
+    "test:unit": "npm test --workspaces --if-present",
     "test:cli": "tsx packages/test-engine/src/cli.ts",
     "test": "tsx packages/test-engine/src/cli.ts",
     "install:browsers": "npx playwright install chromium"

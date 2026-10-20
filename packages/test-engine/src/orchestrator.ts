@@ -22,12 +22,14 @@ export interface ExecutionOptions {
   tagFilter?: string[];
   headless?: boolean;
   slowMo?: number;
+  dashboardUrl?: string;
+  updateBaselines?: boolean;
   cliCommand?: string;
   onEvent?: (event: ExecutionEvent) => void;
 }
 
 export type ExecutionEvent =
-  | { type: 'RUN_STARTED'; payload: { runId: string; totalTests: number; project: string } }
+  | { type: 'RUN_STARTED'; payload: { runId: string; totalTests: number; project: string; environment: string; targetBaseUrl: string; dashboardUrl?: string; browserMode: 'headed' | 'headless'; slowMo: number } }
   | { type: 'TEST_STARTED'; payload: { testId: string; name: string; testType: string; current: number; total: number } }
   | { type: 'STEP_PROGRESS'; payload: { testId: string; step: TestStepResult } }
   | { type: 'TEST_COMPLETED'; payload: { result: TestCaseResult } }
@@ -89,7 +91,12 @@ export class TestEngineOrchestrator {
       payload: {
         runId,
         totalTests: testsToRun.length,
-        project: config.name
+        project: config.name,
+        environment: config.environment,
+        targetBaseUrl: config.baseUrl,
+        dashboardUrl: options.dashboardUrl,
+        browserMode: options.headless ? 'headless' : 'headed',
+        slowMo: options.headless ? 0 : (options.slowMo ?? 600)
       }
     });
 
@@ -144,6 +151,8 @@ export class TestEngineOrchestrator {
           });
         } else if (tc.type === 'api') {
           result = await apiRunner.runTestCase(tc, config, {
+            headless: options.headless,
+            slowMo: options.slowMo,
             onStepUpdate: (step) => {
               options.onEvent?.({
                 type: 'STEP_PROGRESS',
@@ -156,6 +165,7 @@ export class TestEngineOrchestrator {
             artifactsDir: reportsDir,
             projectDir,
             headless: options.headless,
+            updateBaselines: options.updateBaselines,
             onStepUpdate: (step) => {
               options.onEvent?.({
                 type: 'STEP_PROGRESS',
@@ -197,7 +207,9 @@ export class TestEngineOrchestrator {
       skip: testResults.filter(r => r.status === 'SKIPPED').length
     };
 
-    const overallStatus = counts.fail > 0 ? 'FAIL' : counts.pass > 0 ? 'PASS' : 'ERROR';
+    const overallStatus = this.isCancelled
+      ? 'CANCELLED'
+      : counts.fail > 0 ? 'FAIL' : counts.pass > 0 ? 'PASS' : 'ERROR';
 
     const summary: TestRunSummary = {
       runId,

@@ -1,17 +1,23 @@
-import { request, APIRequestContext } from 'playwright';
+import { request, APIRequestContext, chromium, Browser, BrowserContext, Page } from 'playwright';
 import { ProjectConfig, APITestCase, APIStep, ApiAssertion, TestCaseResult, TestStepResult } from '@auto-test/test-case-schema';
 import { interpolateVariables, maskSensitiveData } from '@auto-test/project-config';
+import { configurePlaywrightBrowserPath, launchVisibleBrowser } from './browser-runtime.js';
 
 export interface APIRunnerOptions {
+  headless?: boolean;
+  slowMo?: number;
   runtimeVariables?: Record<string, string>;
   onStepUpdate?: (step: TestStepResult) => void;
 }
 
 export class DynamicAPIRunner {
   private apiContext: APIRequestContext | null = null;
+  private browser: Browser | null = null;
+  private browserContext: BrowserContext | null = null;
+  private page: Page | null = null;
   private runtimeVariables: Record<string, string> = {};
 
-  async setup(config: ProjectConfig): Promise<void> {
+  async setup(config: ProjectConfig, options: APIRunnerOptions = {}): Promise<void> {
     const baseUrl = config.apiBaseUrl || config.baseUrl;
     const defaultHeaders: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -29,6 +35,23 @@ export class DynamicAPIRunner {
       }
     }
 
+    if (options.headless === false) {
+      configurePlaywrightBrowserPath();
+      this.browser = await launchVisibleBrowser(options.slowMo ?? 600);
+      this.browserContext = await this.browser.newContext({
+        viewport: null,
+        baseURL: config.baseUrl
+      });
+      this.page = await this.browserContext.newPage();
+      await this.page.bringToFront();
+      // Keep the target visible while API requests and assertions stream in the dashboard.
+      // A target may expose only an API URL, so navigation failure must not block API checks.
+      try {
+        await this.page.goto(config.baseUrl, { waitUntil: 'domcontentloaded' });
+      } catch (error) {
+        throw new Error(`Target application is unreachable at ${config.baseUrl}: ${(error as Error).message}`);
+      }
+    }
     this.apiContext = await request.newContext({
       baseURL: baseUrl,
       extraHTTPHeaders: defaultHeaders
@@ -45,7 +68,20 @@ export class DynamicAPIRunner {
     this.runtimeVariables = { ...config.variables, ...(options.runtimeVariables || {}) };
 
     if (!this.apiContext) {
-      await this.setup(config);
+      try {
+        await this.setup(config, options);
+      } catch (error) {
+        return {
+          id: testCase.id,
+          name: testCase.name,
+          type: 'api',
+          status: 'ERROR',
+          durationMs: Date.now() - startTime,
+          steps: [],
+          error: (error as Error).message,
+          stackTrace: (error as Error).stack
+        };
+      }
     }
     const api = this.apiContext!;
 
@@ -286,6 +322,15 @@ export class DynamicAPIRunner {
     if (this.apiContext) {
       await this.apiContext.dispose();
       this.apiContext = null;
+    }
+    if (this.browserContext) {
+      await this.browserContext.close();
+      this.browserContext = null;
+      this.page = null;
+    }
+    if (this.browser) {
+      await this.browser.close();
+      this.browser = null;
     }
   }
 }

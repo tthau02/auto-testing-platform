@@ -15,7 +15,8 @@ export interface ResolvedProject {
 export function safeResolvePath(baseDir: string, relativeOrSubPath: string): string {
   const resolved = path.resolve(baseDir, relativeOrSubPath);
   const normalizedBase = path.resolve(baseDir);
-  if (!resolved.startsWith(normalizedBase)) {
+  const relative = path.relative(normalizedBase, resolved);
+  if (relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
     throw new Error(`Security Violation: Path "${relativeOrSubPath}" escapes base directory "${baseDir}"`);
   }
   return resolved;
@@ -50,7 +51,10 @@ export function loadProjectConfig(projectDir: string, environmentOverride?: stri
 
   // Apply environment override if provided
   const targetEnv = environmentOverride || config.environment;
-  if (targetEnv && config.environments && config.environments[targetEnv]) {
+  if (targetEnv && !config.environments?.[targetEnv] && targetEnv !== config.environment) {
+    throw new Error(`Environment "${targetEnv}" is not configured for project "${config.id}". Configured environments: ${Object.keys(config.environments || {}).join(', ') || config.environment}`);
+  }
+  if (targetEnv && config.environments?.[targetEnv]) {
     const envConfig = config.environments[targetEnv];
     config = {
       ...config,
@@ -62,6 +66,10 @@ export function loadProjectConfig(projectDir: string, environmentOverride?: stri
         ...(envConfig.variables || {})
       }
     };
+  }
+
+  if (!config.baseUrl) {
+    throw new Error(`Target application baseUrl is not configured for project "${config.id}" (environment "${targetEnv}").`);
   }
 
   // Validate Host Allowlist
@@ -82,8 +90,14 @@ export function validateHostSecurity(config: ProjectConfig): void {
     try {
       const parsed = new URL(urlStr);
       const isAllowed = allowlist.some(allowed => {
-        if (allowed === '*' || allowed === parsed.hostname) return true;
-        if (allowed.startsWith('*.') && parsed.hostname.endsWith(allowed.slice(2))) return true;
+        if (allowed === '*') return true;
+        const rule = allowed.toLowerCase();
+        const hostname = parsed.hostname.toLowerCase();
+        if (hostname === rule) return true;
+        if (rule.startsWith('*.')) {
+          const suffix = rule.slice(2);
+          return hostname === suffix || hostname.endsWith(`.${suffix}`);
+        }
         return false;
       });
       if (!isAllowed) {

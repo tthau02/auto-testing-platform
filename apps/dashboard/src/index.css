@@ -164,3 +164,9 @@ code, pre {
 .ant-input:focus, .ant-select-focused .ant-select-selector {
   border-color: #38bdf8 !important;
 }
+
+@media (max-width: 900px) {
+  .run-tests-layout {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}

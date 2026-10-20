@@ -3,18 +3,22 @@ import path from 'node:path';
 import { TestRunSummary } from '@auto-test/test-case-schema';
 import { generateMarkdownReport } from './markdown.js';
 import { generateJUnitXml } from './junit.js';
+import { generateHTMLReport } from './html.js';
 
 export * from './markdown.js';
 export * from './junit.js';
+export * from './html.js';
 
 export interface ReportFilePaths {
   runDir: string;
   resultsJsonPath: string;
   reportMdPath: string;
   junitXmlPath: string;
+  htmlReportPath: string;
   relativeResultsJson: string;
   relativeReportMd: string;
   relativeJunitXml: string;
+  relativeHtmlReport: string;
 }
 
 /**
@@ -26,12 +30,14 @@ export function saveReportFiles(summary: TestRunSummary, runDir: string): Report
   const resultsJsonPath = path.join(runDir, 'results.json');
   const reportMdPath = path.join(runDir, 'report.md');
   const junitXmlPath = path.join(runDir, 'junit.xml');
+  const htmlReportPath = path.join(runDir, 'report.html');
 
   // Relative paths for portability
   summary.metadata = {
     ...summary.metadata,
     markdownReportPath: './report.md',
-    junitXmlPath: './junit.xml'
+    junitXmlPath: './junit.xml',
+    htmlReportPath: './report.html'
   };
 
   // 1. Write structured results.json
@@ -44,15 +50,18 @@ export function saveReportFiles(summary: TestRunSummary, runDir: string): Report
   // 3. Write standard JUnit XML
   const junitContent = generateJUnitXml(summary);
   fs.writeFileSync(junitXmlPath, junitContent, 'utf-8');
+  fs.writeFileSync(htmlReportPath, generateHTMLReport(summary), 'utf-8');
 
   return {
     runDir,
     resultsJsonPath,
     reportMdPath,
     junitXmlPath,
+    htmlReportPath,
     relativeResultsJson: 'results.json',
     relativeReportMd: 'report.md',
-    relativeJunitXml: 'junit.xml'
+    relativeJunitXml: 'junit.xml',
+    relativeHtmlReport: 'report.html'
   };
 }
 

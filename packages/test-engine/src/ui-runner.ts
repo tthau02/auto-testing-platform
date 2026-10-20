@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import { chromium, Browser, BrowserContext, Page, Locator } from 'playwright';
 import { ProjectConfig, UITestCase, UIStep, TargetLocator, TestCaseResult, TestStepResult } from '@auto-test/test-case-schema';
 import { interpolateVariables } from '@auto-test/project-config';
+import { configurePlaywrightBrowserPath, launchVisibleBrowser } from './browser-runtime.js';
 
 export interface UIRunnerOptions {
   headless?: boolean;
@@ -19,17 +20,14 @@ export class DynamicUIRunner {
   private isHeadless = true;
 
   async setup(config: ProjectConfig, options: UIRunnerOptions): Promise<void> {
+    configurePlaywrightBrowserPath();
     const headless = options.headless === true;
     this.isHeadless = headless;
     const slowMo = options.slowMo !== undefined ? options.slowMo : (headless ? 0 : 600);
 
-    this.browser = await chromium.launch({
-      headless,
-      slowMo,
-      args: headless 
-        ? ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
-        : ['--start-maximized', '--no-sandbox']
-    });
+    this.browser = headless
+      ? await chromium.launch({ headless: true, slowMo, args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'] })
+      : await launchVisibleBrowser(slowMo);
 
     const defaultViewport = config.viewports?.[0] || { width: 1440, height: 900 };
     this.context = await this.browser.newContext({
@@ -42,6 +40,7 @@ export class DynamicUIRunner {
     });
 
     this.page = await this.context.newPage();
+    if (!headless) await this.page.bringToFront();
     this.page.setDefaultTimeout(config.timeouts?.action || 10000);
     this.page.setDefaultNavigationTimeout(config.timeouts?.navigation || 30000);
   }
@@ -75,14 +74,14 @@ export class DynamicUIRunner {
 
     // Step 0: Navigate to startUrl
     const initialUrl = interpolateVariables(testCase.startUrl, variables);
+    const fullUrl = initialUrl.startsWith('http')
+      ? initialUrl
+      : `${config.baseUrl.replace(/\/$/, '')}/${initialUrl.replace(/^\//, '')}`;
     try {
-      const fullUrl = initialUrl.startsWith('http') 
-        ? initialUrl 
-        : `${config.baseUrl.replace(/\/$/, '')}/${initialUrl.replace(/^\//, '')}`;
       await page.goto(fullUrl);
     } catch (err: any) {
       testStatus = 'FAIL';
-      errorMessage = `Failed to navigate to startUrl "${initialUrl}": ${err.message}`;
+      errorMessage = `Target application navigation failed. Target baseURL: ${config.baseUrl}; start URL: ${fullUrl}. ${err.message}`;
       stackTrace = err.stack;
     }
 

@@ -31,7 +31,7 @@ interface ReportDetailPageProps {
 }
 
 export const ReportDetailPage: React.FC<ReportDetailPageProps> = ({ projectId, runId, onBack }) => {
-  const [data, setData] = useState<{ summary: any; markdown: string } | null>(null);
+  const [data, setData] = useState<{ summary: any; markdown: string; junit: string | null; html: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeMediaUrl, setActiveMediaUrl] = useState<string | null>(null);
   const [mediaTitle, setMediaTitle] = useState<string>('');
@@ -79,7 +79,7 @@ export const ReportDetailPage: React.FC<ReportDetailPageProps> = ({ projectId, r
     );
   }
 
-  const { summary, markdown } = data;
+  const { summary, markdown, junit, html } = data;
   const isPass = summary.status === 'PASS';
 
   const testColumns = [
@@ -203,12 +203,13 @@ export const ReportDetailPage: React.FC<ReportDetailPageProps> = ({ projectId, r
           </Button>
           <Button 
             icon={<DownloadOutlined />} 
-            onClick={() => {
-              const xml = `<?xml version="1.0" encoding="UTF-8"?><testsuite name="${summary.projectName}" tests="${summary.counts.total}" failures="${summary.counts.fail}"/>`;
-              downloadFile(xml, `junit-${runId}.xml`, 'application/xml');
-            }}
+            onClick={() => junit && downloadFile(junit, `junit-${runId}.xml`, 'application/xml')}
+            disabled={!junit}
           >
             junit.xml
+          </Button>
+          <Button icon={<FileTextOutlined />} onClick={() => html && downloadFile(html, `report-${runId}.html`, 'text/html')} disabled={!html}>
+            report.html
           </Button>
         </Space>
       </div>

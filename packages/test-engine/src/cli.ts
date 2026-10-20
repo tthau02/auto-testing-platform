@@ -17,6 +17,7 @@ program
   .option('--test <testId>', 'Run specific test case ID')
   .option('--tags <tags>', 'Filter by comma-separated tags')
   .option('--headed', 'Run browser in headed mode', false)
+  .option('--update-baselines', 'Explicitly accept visual snapshots as new baselines', false)
   .option('--dir <projectsDir>', 'Root directory containing projects', './projects')
   .action(async (opts) => {
     try {
@@ -64,6 +65,7 @@ program
         testCaseIds: opts.test ? [opts.test] : undefined,
         tagFilter: opts.tags ? opts.tags.split(',').map((s: string) => s.trim()) : undefined,
         headless: !opts.headed,
+        updateBaselines: opts.updateBaselines,
         cliCommand: `npm run test:cli -- --project=${opts.project}${opts.env ? ` --env=${opts.env}` : ''}`,
         onEvent: (event) => {
           switch (event.type) {

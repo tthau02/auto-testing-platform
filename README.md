@@ -30,24 +30,23 @@
 auto-testing-platform/
 ├── apps/
 │   ├── dashboard/          # React, Vite, Ant Design QA Studio Web UI
-│   ├── local-service/      # Node.js 127.0.0.1 service, process management, SSE streaming
-│   └── demo-target/        # Built-in mock Web Portal & REST API server (port 3000)
+│   └── local-service/      # Node.js 127.0.0.1 service, process management, SSE streaming
 ├── packages/
 │   ├── test-case-schema/   # Zod runtime schemas & TypeScript types (UI, API, Visual, Result)
 │   ├── project-config/     # Config loader, variable interpolation, path traversal & host security
 │   ├── test-engine/        # Dynamic UI, API, Visual Playwright runners & CLI tool
-│   └── report-engine/      # Structured results aggregator, Markdown & JUnit XML generator
+│   └── report-engine/     # JSON, HTML, Markdown, and JUnit report generation
 ├── projects/
-│   ├── hrm/                # Demo HRM System project config, test-cases, and reports
-│   └── ecommerce/          # Demo E-Commerce Storefront project config & test-cases
+│   └── hrm-enterprise/     # HRM project config, UI/visual test cases, and baselines
 ├── templates/
 │   ├── project.config.example.json
 │   ├── ui-test.example.json
 │   ├── api-test.example.json
 │   └── visual-test.example.json
 ├── .github/workflows/
-│   └── test.yml            # Sample CI/CD pipeline
+│   └── test.yml            # Unit tests, typecheck, and build workflow
 ├── package.json
+├── AGENTS.md               # OpenAI Codex project instructions
 └── README.md
 ```
 
@@ -69,16 +68,17 @@ npx playwright install chromium
 
 ### 2. Launch Local Studio
 
-Start all services (Demo Target on `:3000`, Local Service on `:4000`, Dashboard on `:5173`):
+Start the Local Service and Dashboard:
 
 ```bash
 npm run dev
 ```
 
 Open your browser at:
-- **QA Studio Dashboard**: [http://localhost:5173](http://localhost:5173)
-- **Demo Target Portal**: [http://localhost:3000](http://localhost:3000)
+- **QA Studio Dashboard**: [http://localhost:5174](http://localhost:5174)
 - **Local Service API**: [http://127.0.0.1:4000/api/health](http://127.0.0.1:4000/api/health)
+
+The service runs on `127.0.0.1:4000`; the dashboard runs on port `5174`. The repository does not currently include or launch a demo target application. Configure each project/environment with its own target application URL; the dashboard URL is never used as a test target.
 
 ---
 
@@ -87,21 +87,26 @@ Open your browser at:
 You can run test suites directly via the command line without opening the dashboard:
 
 ```bash
-# Run all tests for the HRM project
-npm run test:cli -- --project=hrm
+# Run all configured tests for the HRM Enterprise project
+npm run test:cli -- --project=hrm-enterprise
 
-# Run only API tests
-npm run test:cli -- --project=hrm --type=api
+# Run only API tests in a project with API testing enabled
+npm run test:cli -- --project=my-api-project --type=api
 
 # Run only UI tests with headed browser
-npm run test:cli -- --project=hrm --type=ui --headed
+npm run test:cli -- --project=hrm-enterprise --type=ui --headed
 
 # Run a specific test case by ID
-npm run test:cli -- --project=hrm --test=UI_LOGIN_001
+npm run test:cli -- --project=hrm-enterprise --test=UI_EMPLOYEE_LIST_001
 
 # Run with environment override
-npm run test:cli -- --project=hrm --env=staging
+npm run test:cli -- --project=hrm-enterprise --env=<configured-environment>
+
+# Explicitly accept current visual snapshots as baselines after reviewing them
+npm run test:cli -- --project=hrm-enterprise --type=visual --update-baselines
 ```
+
+Environment overrides must be defined under the project's `environments` map. Visual runs do not change baselines unless `--update-baselines` is supplied.
 
 ### Exit Codes
 - `0`: All tests passed.
@@ -143,7 +148,12 @@ To add any new application or website for automated testing:
    }
    ```
 
-3. Add your JSON test cases into `projects/my-app/test-cases/` and run!
+3. Add JSON test cases under the configured `testDirectories` and run them with:
+   ```bash
+   npm run test:cli -- --project=my-app
+   ```
+
+The checked-in `hrm-enterprise` project currently enables UI and visual testing and has no API test directory configured. API support is available in the engine, but a project must configure it and provide API test cases before those tests can run.
 
 ---
 

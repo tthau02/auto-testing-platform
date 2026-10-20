@@ -52,7 +52,9 @@ export class RunProcessManager {
     if (event.type === 'RUN_STARTED') {
       run.status = 'RUNNING';
     } else if (event.type === 'RUN_COMPLETED') {
-      run.status = event.payload.summary.status === 'PASS' ? 'COMPLETED' : 'ERROR';
+      run.status = event.payload.summary.status === 'CANCELLED'
+        ? 'CANCELLED'
+        : event.payload.summary.status === 'PASS' ? 'COMPLETED' : 'ERROR';
       run.summary = event.payload.summary;
     }
   }
@@ -64,25 +66,6 @@ export class RunProcessManager {
     if (run.process && !run.process.killed) {
       run.process.kill('SIGINT');
       run.status = 'CANCELLED';
-      run.emitter.emit('event', {
-        type: 'RUN_COMPLETED',
-        payload: {
-          summary: {
-            runId,
-            projectId: run.projectId,
-            projectName: run.projectId,
-            environment: 'local',
-            baseUrl: '',
-            startTime: run.startedAt,
-            endTime: new Date().toISOString(),
-            durationMs: 0,
-            status: 'ERROR',
-            counts: { total: 0, pass: 0, fail: 0, skip: 0 },
-            results: []
-          },
-          reportsDir: ''
-        }
-      });
       return true;
     }
     return false;

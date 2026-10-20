@@ -5,9 +5,11 @@ import { PNG } from 'pngjs';
 import pixelmatch from 'pixelmatch';
 import { ProjectConfig, VisualTestCase, TestCaseResult, TestStepResult } from '@auto-test/test-case-schema';
 import { interpolateVariables } from '@auto-test/project-config';
+import { configurePlaywrightBrowserPath, launchVisibleBrowser } from './browser-runtime.js';
 
 export interface VisualRunnerOptions {
   headless?: boolean;
+  updateBaselines?: boolean;
   artifactsDir: string;
   projectDir: string;
   onStepUpdate?: (step: TestStepResult) => void;
@@ -19,11 +21,11 @@ export class DynamicVisualRunner {
   private page: Page | null = null;
 
   async setup(options: VisualRunnerOptions): Promise<void> {
+    configurePlaywrightBrowserPath();
     const headless = options.headless !== undefined ? options.headless : true;
-    this.browser = await chromium.launch({
-      headless,
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
-    });
+    this.browser = headless
+      ? await chromium.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'] })
+      : await launchVisibleBrowser();
   }
 
   async runTestCase(
@@ -78,6 +80,7 @@ export class DynamicVisualRunner {
           deviceScaleFactor: 1
         });
         const page = await context.newPage();
+        if (options.headless === false) await page.bringToFront();
 
         const targetUrl = testCase.url.startsWith('http')
           ? testCase.url
@@ -103,11 +106,14 @@ export class DynamicVisualRunner {
           animations: 'disabled'
         });
 
-        // Check if baseline exists
-        if (!fs.existsSync(baselineFullPath)) {
-          // Initialize baseline automatically for first run
+        // Update or initialize baselines only after an explicit user request.
+        if (options.updateBaselines) {
           fs.copyFileSync(actualFullPath, baselineFullPath);
-          stepStatus = 'PASS';
+        } else if (!fs.existsSync(baselineFullPath)) {
+          stepStatus = 'FAIL';
+          overallStatus = 'FAIL';
+          stepError = `Baseline does not exist. Review the captured image and rerun with --update-baselines to accept it.`;
+          errorMessage = stepError;
         } else {
           // Compare baseline and actual
           const baselineImg = PNG.sync.read(fs.readFileSync(baselineFullPath));
@@ -150,7 +156,7 @@ export class DynamicVisualRunner {
       } catch (err: any) {
         stepStatus = 'FAIL';
         overallStatus = 'FAIL';
-        stepError = err.message;
+        stepError = `Target application navigation or snapshot failed at ${config.baseUrl}: ${err.message}`;
         errorMessage = err.message;
         stackTrace = err.stack;
       } finally {

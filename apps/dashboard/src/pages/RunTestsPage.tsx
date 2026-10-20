@@ -44,6 +44,16 @@ export const RunTestsPage: React.FC<RunTestsPageProps> = ({
   const [headless, setHeadless] = useState<boolean>(false); // Default to FALSE: Opens browser window so user can watch!
   const [slowMo, setSlowMo] = useState<number>(600); // 600ms default delay between steps for comfortable human observation
   const [typeFilter, setTypeFilter] = useState<string>('all');
+  const selectedProject = projects.find(project => project.id === selectedProjectId);
+  const environmentNames = [...new Set([
+    selectedProject?.environment || 'local',
+    ...Object.keys(selectedProject?.config?.environments || {})
+  ])];
+  const environmentOptions = environmentNames.map(environment => {
+    const override = selectedProject?.config?.environments?.[environment];
+    const url = override?.baseUrl || selectedProject?.baseUrl;
+    return { value: environment, label: `${environment} (${url || 'configured URL'})` };
+  });
 
   // Execution state
   const [isRunning, setIsRunning] = useState<boolean>(false);
@@ -70,6 +80,7 @@ export const RunTestsPage: React.FC<RunTestsPageProps> = ({
       if (data.length > 0) {
         const targetId = initialProjectId || data[0].id;
         setSelectedProjectId(targetId);
+        setSelectedEnv(data.find(project => project.id === targetId)?.environment || 'local');
         loadTestCases(targetId);
       }
     } catch (err: any) {
@@ -93,12 +104,17 @@ export const RunTestsPage: React.FC<RunTestsPageProps> = ({
 
   const handleProjectSelect = (id: string) => {
     setSelectedProjectId(id);
+    setSelectedEnv(projects.find(project => project.id === id)?.environment || 'local');
     loadTestCases(id);
   };
 
   const startTestRun = async () => {
     if (!selectedProjectId) {
       message.warning('Please select a project');
+      return;
+    }
+    if (selectedTestIds.length === 0) {
+      message.warning('Select at least one test case');
       return;
     }
 
@@ -112,7 +128,9 @@ export const RunTestsPage: React.FC<RunTestsPageProps> = ({
       const response = await api.triggerRun({
         projectId: selectedProjectId,
         environment: selectedEnv,
-        testCaseIds: selectedTestIds.length > 0 ? selectedTestIds : undefined,
+        environmentId: selectedEnv,
+        dashboardUrl: window.location.origin,
+        testCaseIds: selectedTestIds,
         typeFilter: typeFilter as any,
         headless,
         slowMo: headless ? 0 : slowMo
@@ -125,6 +143,7 @@ export const RunTestsPage: React.FC<RunTestsPageProps> = ({
       connectEventStream(runId);
     } catch (err: any) {
       setIsRunning(false);
+      setCurrentStepLog(`Execution failed: ${err.message}`);
       message.error(`Execution failed: ${err.message}`);
     }
   };
@@ -147,7 +166,7 @@ export const RunTestsPage: React.FC<RunTestsPageProps> = ({
 
         if (event.type === 'RUN_STARTED') {
           totalTests = event.payload.totalTests || totalTests;
-          setCurrentStepLog(`Started test suite [${totalTests} tests to run]`);
+          setCurrentStepLog(`Dashboard ${event.payload.dashboardUrl || window.location.origin} → ${event.payload.project} / ${event.payload.environment} → target ${event.payload.targetBaseUrl} (${event.payload.browserMode}, slowMo ${event.payload.slowMo}ms); ${totalTests} tests`);
         } else if (event.type === 'TEST_STARTED') {
           setCurrentStepLog(`Running [${event.payload.testType.toUpperCase()}]: ${event.payload.name}`);
         } else if (event.type === 'STEP_PROGRESS') {
@@ -178,8 +197,7 @@ export const RunTestsPage: React.FC<RunTestsPageProps> = ({
     if (!currentRunId) return;
     try {
       await api.stopRun(currentRunId);
-      message.info('Stopping execution process...');
-      setIsRunning(false);
+      message.info('Stop requested. The current test will finish before the run is cancelled.');
     } catch (err: any) {
       message.error(err.message);
     }
@@ -194,7 +212,7 @@ export const RunTestsPage: React.FC<RunTestsPageProps> = ({
         </Text>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 360px) 1fr', gap: 20 }}>
+      <div className="run-tests-layout" style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 380px) minmax(0, 1fr)', gap: 20 }}>
         {/* Run Configuration Panel */}
         <Card title={<span style={{ color: '#f8fafc' }}>⚙️ Execution Parameters</span>} bordered={false} className="glass-panel">
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -216,11 +234,7 @@ export const RunTestsPage: React.FC<RunTestsPageProps> = ({
                 onChange={setSelectedEnv}
                 disabled={isRunning}
                 style={{ width: '100%' }}
-                options={[
-                  { label: `Local (${projects.find(p => p.id === selectedProjectId)?.baseUrl || 'http://localhost:5175'})`, value: 'local' },
-                  { label: 'Staging', value: 'staging' },
-                  { label: 'Production', value: 'prod' }
-                ]}
+                options={environmentOptions}
               />
             </div>
 
@@ -240,6 +254,12 @@ export const RunTestsPage: React.FC<RunTestsPageProps> = ({
               />
             </div>
 
+            <Alert
+              type="warning"
+              showIcon
+              message="Visual baselines are never changed automatically. Use the CLI --update-baselines option after reviewing screenshots to accept new baselines."
+            />
+
             {/* Live Observation & Browser Window Mode */}
             <div style={{
               background: '#0f172a',
@@ -253,7 +273,7 @@ export const RunTestsPage: React.FC<RunTestsPageProps> = ({
                     🖥️ Mở trình duyệt trực tiếp (Headed)
                   </Text>
                   <Text type="secondary" style={{ fontSize: 11 }}>
-                    Bật cửa sổ Chrome, tự động click & gõ phím trên màn hình
+                    Bấm Launch Execution để mở cửa sổ Chromium riêng khi chạy UI, API hoặc Visual.
                   </Text>
                 </div>
                 <Switch 
@@ -333,7 +353,7 @@ export const RunTestsPage: React.FC<RunTestsPageProps> = ({
                 icon={<PlayCircleOutlined />}
                 style={{ background: '#0284c7', height: 46, fontWeight: 700, fontSize: 16 }}
                 onClick={startTestRun}
-                disabled={selectedTestIds.length === 0}
+                disabled={!selectedProjectId || selectedTestIds.length === 0}
               >
                 Launch Execution ({selectedTestIds.length} tests)
               </Button>
@@ -462,7 +482,10 @@ export const RunTestsPage: React.FC<RunTestsPageProps> = ({
                   {liveEvents.map((evt, i) => (
                     <div key={i} style={{ fontSize: 12, fontFamily: 'JetBrains Mono, monospace' }}>
                       {evt.type === 'TEST_STARTED' && (
-                        <span style={{ color: '#38bdf8' }}>▶ [{evt.payload.testType.toUpperCase()}] {evt.payload.name}</span>
+                        <span style={{ color: '#38bdf8' }}>▶ [{evt.payload.testType.toUpperCase()}] {evt.payload.name} ({evt.payload.testId})</span>
+                      )}
+                      {evt.type === 'RUN_STARTED' && (
+                        <span style={{ color: '#a5b4fc' }}>ℹ Dashboard: {evt.payload.dashboardUrl || window.location.origin} · Project: {evt.payload.project} · Environment: {evt.payload.environment} · Target: {evt.payload.targetBaseUrl} · Browser: {evt.payload.browserMode}</span>
                       )}
                       {evt.type === 'STEP_PROGRESS' && (
                         <span style={{ color: evt.payload.step.status === 'PASS' ? '#10b981' : '#ef4444', paddingLeft: 12 }}>
@@ -470,9 +493,16 @@ export const RunTestsPage: React.FC<RunTestsPageProps> = ({
                         </span>
                       )}
                       {evt.type === 'TEST_COMPLETED' && (
-                        <span style={{ color: evt.payload.result.status === 'PASS' ? '#10b981' : '#ef4444', fontWeight: 600 }}>
-                          {evt.payload.result.status === 'PASS' ? '✅ PASS' : '❌ FAIL'}: {evt.payload.result.name}
-                        </span>
+                        <div>
+                          <span style={{ color: evt.payload.result.status === 'PASS' ? '#10b981' : '#ef4444', fontWeight: 600 }}>
+                            {evt.payload.result.status === 'PASS' ? '✅ PASS' : `❌ ${evt.payload.result.status}`}: {evt.payload.result.name}
+                          </span>
+                          {evt.payload.result.error && (
+                            <div style={{ color: '#fca5a5', paddingLeft: 20, whiteSpace: 'pre-wrap' }}>
+                              {evt.payload.result.error}
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
                   ))}
