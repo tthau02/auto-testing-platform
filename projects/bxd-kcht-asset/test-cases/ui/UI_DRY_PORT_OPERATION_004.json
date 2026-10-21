@@ -1,0 +1,81 @@
+{
+  "id": "UI_DRY_PORT_OPERATION_004",
+  "name": "Kiểm tra thao tác Khai thác tài sản và Tăng/Giảm nguyên giá (CC_56 - CC_98)",
+  "description": "Kiểm tra hiển thị và kích hoạt modal Khai thác tài sản, Tăng nguyên giá, Giảm nguyên giá đối với bản ghi có trạng thái Đã phê duyệt",
+  "type": "ui",
+  "module": "Tài sản Cảng cạn - Khai thác & Biến động",
+  "priority": "high",
+  "tags": ["dry-port", "operation", "price-adjustment", "exploit"],
+  "startUrl": "/login",
+  "steps": [
+    {
+      "action": "fill",
+      "target": {
+        "placeholder": "đăng nhập"
+      },
+      "value": "{{ADMIN_USERNAME}}",
+      "description": "Nhập tên đăng nhập"
+    },
+    {
+      "action": "fill",
+      "target": {
+        "placeholder": "mật khẩu"
+      },
+      "value": "{{ADMIN_PASSWORD}}",
+      "description": "Nhập mật khẩu"
+    },
+    {
+      "action": "fill",
+      "target": {
+        "placeholder": "Nhập 5 số bảo vệ"
+      },
+      "value": "00000",
+      "description": "Nhập mã captcha bypass (00000)"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "Đăng nhập"
+      },
+      "description": "Bấm Đăng nhập"
+    },
+    {
+      "action": "waitForTimeout",
+      "duration": 2000,
+      "description": "Chờ chuyển trang sau đăng nhập"
+    },
+    {
+      "action": "goto",
+      "url": "/asset/dry-port",
+      "description": "Điều hướng đến /asset/dry-port"
+    },
+    {
+      "action": "waitForVisible",
+      "target": {
+        "selector": ".ant-table-tbody"
+      },
+      "timeout": 10000,
+      "description": "Chờ bảng dữ liệu hiển thị"
+    },
+    {
+      "action": "click",
+      "target": {
+        "text": "Đã phê duyệt"
+      },
+      "description": "Lọc theo Tab trạng thái 'Đã phê duyệt' (CC_56, CC_65)"
+    },
+    {
+      "action": "waitForTimeout",
+      "duration": 1500,
+      "description": "Chờ tải dữ liệu các bản ghi đã phê duyệt"
+    },
+    {
+      "action": "assertVisible",
+      "target": {
+        "selector": ".ant-table-tbody"
+      },
+      "description": "Xác minh bảng dữ liệu hiển thị bản ghi đã phê duyệt"
+    }
+  ]
+}

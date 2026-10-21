@@ -2,7 +2,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { chromium, Browser, BrowserContext, Page, Locator } from 'playwright';
 import { ProjectConfig, UITestCase, UIStep, TargetLocator, TestCaseResult, TestStepResult } from '@auto-test/test-case-schema';
-import { interpolateVariables } from '@auto-test/project-config';
+import { interpolateVariables, validateTargetUrl } from '@auto-test/project-config';
 import { configurePlaywrightBrowserPath, launchVisibleBrowser } from './browser-runtime.js';
 
 export interface UIRunnerOptions {
@@ -18,6 +18,8 @@ export class DynamicUIRunner {
   private context: BrowserContext | null = null;
   private page: Page | null = null;
   private isHeadless = true;
+  private authenticatedIdentity: string | null = null;
+  private pendingLoginIdentity: string | null = null;
 
   async setup(config: ProjectConfig, options: UIRunnerOptions): Promise<void> {
     configurePlaywrightBrowserPath();
@@ -72,22 +74,38 @@ export class DynamicUIRunner {
     const screenshotsDir = path.join(options.artifactsDir, 'screenshots');
     fs.mkdirSync(screenshotsDir, { recursive: true });
 
-    // Step 0: Navigate to startUrl
+    // Reuse a session for consecutive cases that use the same account.
+    let firstStepIndex = 0;
+    const loginBlock = this.findLoginBlock(testCase.steps, variables);
+    const canReuseSession = Boolean(
+      loginBlock &&
+      this.authenticatedIdentity === loginBlock.identity &&
+      await this.hasStoredAuthToken(page)
+    );
+    if (canReuseSession && loginBlock) {
+      firstStepIndex = loginBlock.endIndex + 1;
+    } else if (this.authenticatedIdentity) {
+      await this.clearAuthenticatedSession(page);
+    }
+
+    // Step 0: Navigate to startUrl unless the matching account is already authenticated.
     const initialUrl = interpolateVariables(testCase.startUrl, variables);
     const fullUrl = initialUrl.startsWith('http')
       ? initialUrl
       : `${config.baseUrl.replace(/\/$/, '')}/${initialUrl.replace(/^\//, '')}`;
-    try {
-      await page.goto(fullUrl);
-    } catch (err: any) {
-      testStatus = 'FAIL';
-      errorMessage = `Target application navigation failed. Target baseURL: ${config.baseUrl}; start URL: ${fullUrl}. ${err.message}`;
-      stackTrace = err.stack;
+    if (!canReuseSession) {
+      try {
+        await page.goto(validateTargetUrl(config, fullUrl));
+      } catch (err: any) {
+        testStatus = 'FAIL';
+        errorMessage = `Target application navigation failed. Target baseURL: ${config.baseUrl}; start URL: ${fullUrl}. ${err.message}`;
+        stackTrace = err.stack;
+      }
     }
 
     // Execute steps sequentially if startUrl succeeded
     if (testStatus === 'PASS') {
-      for (let i = 0; i < testCase.steps.length; i++) {
+      for (let i = firstStepIndex; i < testCase.steps.length; i++) {
         const step = testCase.steps[i];
         const stepStartTime = Date.now();
         const stepName = step.description || `${step.action} ${this.formatTarget(step)}`;
@@ -96,7 +114,14 @@ export class DynamicUIRunner {
         let stepDetails: string | undefined;
 
         try {
-          await this.executeStep(page, step, variables, screenshotsDir, testCase.id, i);
+          await this.executeStep(page, step, config, variables, screenshotsDir, testCase.id, i);
+          if (step.action === 'fill' && this.isLoginIdentityLocator(step.target)) {
+            this.pendingLoginIdentity = interpolateVariables(step.value, variables);
+          }
+          if (step.action === 'click' && this.isLoginButton(step.target) && this.pendingLoginIdentity) {
+            if (await this.waitForStoredAuthToken(page)) this.authenticatedIdentity = this.pendingLoginIdentity;
+            this.pendingLoginIdentity = null;
+          }
         } catch (err: any) {
           stepStatus = 'FAIL';
           testStatus = 'FAIL';
@@ -172,6 +197,7 @@ export class DynamicUIRunner {
   private async executeStep(
     page: Page,
     step: UIStep,
+    config: ProjectConfig,
     variables: Record<string, string>,
     screenshotsDir: string,
     testId: string,
@@ -180,7 +206,10 @@ export class DynamicUIRunner {
     switch (step.action) {
       case 'goto': {
         const url = interpolateVariables(step.url, variables);
-        await page.goto(url);
+        if (new URL(url, config.baseUrl).pathname.replace(/\/$/, '') === '/login') {
+          await this.clearAuthenticatedSession(page);
+        }
+        await page.goto(validateTargetUrl(config, url));
         break;
       }
       case 'click': {
@@ -371,6 +400,63 @@ export class DynamicUIRunner {
       this.page = null;
       this.context = null;
       this.browser = null;
+      this.authenticatedIdentity = null;
+      this.pendingLoginIdentity = null;
     }
+  }
+
+  private findLoginBlock(steps: UIStep[], variables: Record<string, string>): { identity: string; endIndex: number } | undefined {
+    const identityIndex = steps.findIndex((step, index) =>
+      index < 4 && step.action === 'fill' && this.isLoginIdentityLocator(step.target)
+    );
+    if (identityIndex < 0) return undefined;
+    const identityStep = steps[identityIndex];
+    if (identityStep.action !== 'fill') return undefined;
+    const endIndex = steps.findIndex((step, index) =>
+      index > identityIndex && index <= identityIndex + 5 &&
+      step.action === 'click' && this.isLoginButton(step.target)
+    );
+    if (endIndex < 0) return undefined;
+    return { identity: interpolateVariables(identityStep.value, variables), endIndex };
+  }
+
+  private isLoginIdentityLocator(target: TargetLocator): boolean {
+    const locatorText = `${target.placeholder || ''} ${target.label || ''} ${target.name || ''}`.toLowerCase();
+    return locatorText.includes('đăng nhập') || locatorText.includes('email') || locatorText.includes('tài khoản');
+  }
+
+  private isLoginButton(target: TargetLocator): boolean {
+    return target.role === 'button' && (target.name || '').toLowerCase().includes('đăng nhập');
+  }
+
+  private async hasStoredAuthToken(page: Page): Promise<boolean> {
+    try {
+      return await page.evaluate(() => Boolean(localStorage.getItem('auth_token')));
+    } catch {
+      return false;
+    }
+  }
+
+  private async waitForStoredAuthToken(page: Page): Promise<boolean> {
+    try {
+      await page.waitForFunction(() => Boolean(localStorage.getItem('auth_token')), null, { timeout: 5000 });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  private async clearAuthenticatedSession(page: Page): Promise<void> {
+    await this.context?.clearCookies();
+    try {
+      await page.evaluate(() => {
+        localStorage.clear();
+        sessionStorage.clear();
+      });
+    } catch {
+      // The current page may not have reached the target origin yet.
+    }
+    this.authenticatedIdentity = null;
+    this.pendingLoginIdentity = null;
   }
 }

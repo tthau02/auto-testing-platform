@@ -1,0 +1,133 @@
+{
+  "id": "UI_DRY_PORT_CREATE_DRAWER_002",
+  "name": "Kiểm tra mở form Thêm mới tài sản cảng cạn, kiểm tra 3 Tab và validation (CC_8 - CC_22)",
+  "description": "Nhấp nút 'Thêm mới', xác minh Drawer mở với 3 nhóm Tab (Thông tin chung, Hồ sơ tài sản, Thông tin chi tiết), kiểm tra chuyển tab và đóng Drawer",
+  "type": "ui",
+  "module": "Tài sản Cảng cạn - Tạo mới",
+  "priority": "critical",
+  "tags": ["create", "dry-port", "drawer", "validation"],
+  "startUrl": "/login",
+  "steps": [
+    {
+      "action": "fill",
+      "target": {
+        "placeholder": "đăng nhập"
+      },
+      "value": "{{ADMIN_USERNAME}}",
+      "description": "Nhập tên đăng nhập"
+    },
+    {
+      "action": "fill",
+      "target": {
+        "placeholder": "mật khẩu"
+      },
+      "value": "{{ADMIN_PASSWORD}}",
+      "description": "Nhập mật khẩu"
+    },
+    {
+      "action": "fill",
+      "target": {
+        "placeholder": "Nhập 5 số bảo vệ"
+      },
+      "value": "00000",
+      "description": "Nhập mã captcha bypass (00000)"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "Đăng nhập"
+      },
+      "description": "Bấm Đăng nhập"
+    },
+    {
+      "action": "waitForTimeout",
+      "duration": 2000,
+      "description": "Chờ chuyển trang sau đăng nhập"
+    },
+    {
+      "action": "goto",
+      "url": "/asset/dry-port",
+      "description": "Điều hướng đến /asset/dry-port"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "Thêm mới"
+      },
+      "description": "Nhấp mở Drawer 'Thêm mới' tài sản cảng cạn (CC_8)"
+    },
+    {
+      "action": "assertVisible",
+      "target": {
+        "text": "Thông tin chung"
+      },
+      "description": "Xác minh Tab 1 'Thông tin chung' hiển thị trong Form (CC_8, CC_9)"
+    },
+    {
+      "action": "assertVisible",
+      "target": {
+        "text": "Hồ sơ tài sản"
+      },
+      "description": "Xác minh Tab 2 'Hồ sơ tài sản' hiển thị trong Form (CC_8, CC_9)"
+    },
+    {
+      "action": "assertVisible",
+      "target": {
+        "text": "Thông tin chi tiết"
+      },
+      "description": "Xác minh Tab 3 'Thông tin chi tiết' hiển thị trong Form (CC_8, CC_9, CC_16)"
+    },
+    {
+      "action": "click",
+      "target": {
+        "text": "Hồ sơ tài sản"
+      },
+      "description": "Chuyển sang Tab 2 'Hồ sơ tài sản' (CC_21)"
+    },
+    {
+      "action": "assertVisible",
+      "target": {
+        "text": "Tài liệu đính kèm"
+      },
+      "description": "Xác minh khu vực đính kèm file tài liệu hiển thị (CC_12, CC_13)"
+    },
+    {
+      "action": "click",
+      "target": {
+        "text": "Thông tin chi tiết"
+      },
+      "description": "Chuyển sang Tab 3 'Thông tin chi tiết' (CC_21)"
+    },
+    {
+      "action": "assertVisible",
+      "target": {
+        "text": "Nguyên giá"
+      },
+      "description": "Xác minh trường tính toán giá trị nguyên giá hiển thị (CC_16, CC_18)"
+    },
+    {
+      "action": "click",
+      "target": {
+        "text": "Thông tin chung"
+      },
+      "description": "Chuyển lại Tab 1 'Thông tin chung'"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "Đóng"
+      },
+      "description": "Nhấp nút Đóng/Hủy để thoát Drawer an toàn"
+    },
+    {
+      "action": "assertVisible",
+      "target": {
+        "text": "Tài sản cảng cạn"
+      },
+      "description": "Xác minh quay lại màn hình danh sách thành công"
+    }
+  ]
+}

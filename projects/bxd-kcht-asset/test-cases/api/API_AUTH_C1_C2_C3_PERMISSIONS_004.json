@@ -1,0 +1,152 @@
+{
+  "id": "API_AUTH_C1_C2_C3_PERMISSIONS_004",
+  "name": "Kiểm thử API xác thực và cấp quyền cho 3 cấp tài khoản C1, C2, C3",
+  "description": "Thực hiện đăng nhập lần lượt với tài khoản C1 (testtesthh10102000@gmail.com), C2 (testhh0@gmail.com), và C3 (testhh1@gmail.com); trích xuất JWT Token và kiểm tra quyền gọi API danh sách Cảng cạn /api/v1/asset/dry-port-assets",
+  "type": "api",
+  "module": "Tài sản Cảng cạn - Phân quyền API",
+  "priority": "critical",
+  "tags": ["api", "auth", "permissions", "c1", "c2", "c3"],
+  "steps": [
+    {
+      "name": "Đăng nhập với tài khoản C1 (testtesthh10102000@gmail.com)",
+      "method": "POST",
+      "endpoint": "/api/auth/login",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "username": "{{C1_USERNAME}}",
+        "password": "{{C1_PASSWORD}}",
+        "captchaCode": "00000"
+      },
+      "extractVariables": [
+        {
+          "name": "TOKEN_C1",
+          "path": "data.token"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "status",
+          "expected": 200,
+          "description": "Tài khoản C1 đăng nhập thành công mã 200"
+        },
+        {
+          "type": "fieldExists",
+          "path": "data.token",
+          "description": "Phải nhận được Token JWT cho tài khoản C1"
+        }
+      ]
+    },
+    {
+      "name": "Tài khoản C1 gọi API danh sách Cảng cạn",
+      "method": "GET",
+      "endpoint": "/api/v1/asset/dry-port-assets?page=0&size=10",
+      "headers": {
+        "Authorization": "Bearer {{TOKEN_C1}}",
+        "Content-Type": "application/json"
+      },
+      "assertions": [
+        {
+          "type": "status",
+          "expected": 200,
+          "description": "Tài khoản C1 có quyền xem danh sách cảng cạn (mã 200)"
+        }
+      ]
+    },
+    {
+      "name": "Đăng nhập với tài khoản C2 (testhh0@gmail.com)",
+      "method": "POST",
+      "endpoint": "/api/auth/login",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "username": "{{C2_USERNAME}}",
+        "password": "{{C2_PASSWORD}}",
+        "captchaCode": "00000"
+      },
+      "extractVariables": [
+        {
+          "name": "TOKEN_C2",
+          "path": "data.token"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "status",
+          "expected": 200,
+          "description": "Tài khoản C2 đăng nhập thành công mã 200"
+        },
+        {
+          "type": "fieldExists",
+          "path": "data.token",
+          "description": "Phải nhận được Token JWT cho tài khoản C2"
+        }
+      ]
+    },
+    {
+      "name": "Tài khoản C2 gọi API danh sách Cảng cạn",
+      "method": "GET",
+      "endpoint": "/api/v1/asset/dry-port-assets?page=0&size=10",
+      "headers": {
+        "Authorization": "Bearer {{TOKEN_C2}}",
+        "Content-Type": "application/json"
+      },
+      "assertions": [
+        {
+          "type": "status",
+          "expected": 200,
+          "description": "Tài khoản C2 có quyền xem danh sách cảng cạn (mã 200)"
+        }
+      ]
+    },
+    {
+      "name": "Đăng nhập với tài khoản C3 (testhh1@gmail.com)",
+      "method": "POST",
+      "endpoint": "/api/auth/login",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "username": "{{C3_USERNAME}}",
+        "password": "{{C3_PASSWORD}}",
+        "captchaCode": "00000"
+      },
+      "extractVariables": [
+        {
+          "name": "TOKEN_C3",
+          "path": "data.token"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "status",
+          "expected": 200,
+          "description": "Tài khoản C3 đăng nhập thành công mã 200"
+        },
+        {
+          "type": "fieldExists",
+          "path": "data.token",
+          "description": "Phải nhận được Token JWT cho tài khoản C3"
+        }
+      ]
+    },
+    {
+      "name": "Tài khoản C3 gọi API danh sách Cảng cạn",
+      "method": "GET",
+      "endpoint": "/api/v1/asset/dry-port-assets?page=0&size=10",
+      "headers": {
+        "Authorization": "Bearer {{TOKEN_C3}}",
+        "Content-Type": "application/json"
+      },
+      "assertions": [
+        {
+          "type": "status",
+          "expected": 200,
+          "description": "Tài khoản C3 có quyền xem danh sách cảng cạn (mã 200)"
+        }
+      ]
+    }
+  ]
+}

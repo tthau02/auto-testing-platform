@@ -1,0 +1,117 @@
+{
+  "id": "UI_DRY_PORT_DETAIL_VIEW_003",
+  "name": "Kiểm tra xem chi tiết tài sản cảng cạn và cấu trúc 5 Tab hiển thị (CC_39 - CC_48)",
+  "description": "Mở Drawer xem chi tiết của một bản ghi Cảng cạn, xác minh hiển thị đầy đủ 5 Tab: Thông tin chung, Hồ sơ tài sản, Thông tin chi tiết, Khai thác tài sản, Lịch sử thay đổi nguyên giá",
+  "type": "ui",
+  "module": "Tài sản Cảng cạn - Xem chi tiết",
+  "priority": "high",
+  "tags": ["detail", "dry-port", "drawer", "tabs"],
+  "startUrl": "/login",
+  "steps": [
+    {
+      "action": "fill",
+      "target": {
+        "placeholder": "đăng nhập"
+      },
+      "value": "{{ADMIN_USERNAME}}",
+      "description": "Nhập tên đăng nhập"
+    },
+    {
+      "action": "fill",
+      "target": {
+        "placeholder": "mật khẩu"
+      },
+      "value": "{{ADMIN_PASSWORD}}",
+      "description": "Nhập mật khẩu"
+    },
+    {
+      "action": "fill",
+      "target": {
+        "placeholder": "Nhập 5 số bảo vệ"
+      },
+      "value": "00000",
+      "description": "Nhập mã captcha bypass (00000)"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "Đăng nhập"
+      },
+      "description": "Bấm Đăng nhập"
+    },
+    {
+      "action": "waitForTimeout",
+      "duration": 2000,
+      "description": "Chờ chuyển trang sau đăng nhập"
+    },
+    {
+      "action": "goto",
+      "url": "/asset/dry-port",
+      "description": "Điều hướng đến /asset/dry-port"
+    },
+    {
+      "action": "waitForVisible",
+      "target": {
+        "selector": ".ant-table-tbody"
+      },
+      "timeout": 10000,
+      "description": "Chờ bảng dữ liệu cảng cạn hiển thị"
+    },
+    {
+      "action": "click",
+      "target": {
+        "selector": ".ant-table-tbody tr:first-child td:first-child a, .ant-table-tbody tr:first-child td:first-child span"
+      },
+      "description": "Nhấp vào liên kết tên bản ghi đầu tiên trong bảng để mở xem chi tiết (CC_39, CC_40)"
+    },
+    {
+      "action": "waitForTimeout",
+      "duration": 1500,
+      "description": "Chờ Drawer xem chi tiết mở ra"
+    },
+    {
+      "action": "assertVisible",
+      "target": {
+        "text": "Thông tin chung"
+      },
+      "description": "Xác minh Tab 1 'Thông tin chung' hiển thị (CC_44)"
+    },
+    {
+      "action": "assertVisible",
+      "target": {
+        "text": "Hồ sơ tài sản"
+      },
+      "description": "Xác minh Tab 2 'Hồ sơ tài sản' hiển thị (CC_45)"
+    },
+    {
+      "action": "assertVisible",
+      "target": {
+        "text": "Thông tin chi tiết"
+      },
+      "description": "Xác minh Tab 3 'Thông tin chi tiết' hiển thị (CC_46)"
+    },
+    {
+      "action": "assertVisible",
+      "target": {
+        "text": "Khai thác tài sản"
+      },
+      "description": "Xác minh Tab 4 'Khai thác tài sản' hiển thị (CC_47)"
+    },
+    {
+      "action": "assertVisible",
+      "target": {
+        "text": "Lịch sử thay đổi nguyên giá"
+      },
+      "description": "Xác minh Tab 5 'Lịch sử thay đổi nguyên giá' hiển thị (CC_48)"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "Đóng"
+      },
+      "description": "Đóng Drawer chi tiết"
+    }
+  ]
+}

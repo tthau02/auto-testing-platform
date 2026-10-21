@@ -48,7 +48,8 @@ export const ProjectConfigSchema = z.object({
   apiBaseUrl: z.string().url('apiBaseUrl must be a valid URL').optional(),
   environment: z.string().default('local'),
   environments: z.record(EnvironmentOverrideSchema).optional(),
-  testDirectories: z.array(z.string()).min(1, 'At least one test directory must be specified').default([
+  testWorkbook: z.string().optional(),
+  testDirectories: z.array(z.string()).default([
     'test-cases/ui',
     'test-cases/api',
     'test-cases/visual'

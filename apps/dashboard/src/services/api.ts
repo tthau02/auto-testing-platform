@@ -22,6 +22,10 @@ export interface TestCaseItem {
   steps?: any[];
   startUrl?: string;
   url?: string;
+  automationReady?: boolean;
+  automationError?: string;
+  manualSteps?: string[];
+  expectedResults?: string[];
 }
 
 export interface RunOptions {

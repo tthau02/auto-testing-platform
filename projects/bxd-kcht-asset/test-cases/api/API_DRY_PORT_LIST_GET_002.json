@@ -1,0 +1,63 @@
+{
+  "id": "API_DRY_PORT_LIST_GET_002",
+  "name": "Lấy danh sách Tài sản Cảng cạn có phân trang (CC_1 - CC_7)",
+  "description": "Đăng nhập lấy Token và gửi GET request tới /api/v1/asset/dry-port-assets để xác minh dữ liệu danh sách tài sản cảng cạn",
+  "type": "api",
+  "module": "Tài sản Cảng cạn - API Danh sách",
+  "priority": "critical",
+  "tags": ["api", "dry-port", "list"],
+  "steps": [
+    {
+      "name": "Đăng nhập lấy Access Token",
+      "method": "POST",
+      "endpoint": "/api/auth/login",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "username": "{{ADMIN_USERNAME}}",
+        "password": "{{ADMIN_PASSWORD}}",
+        "captchaCode": "00000"
+      },
+      "extractVariables": [
+        {
+          "name": "AUTH_TOKEN",
+          "path": "data.token"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "status",
+          "expected": 200,
+          "description": "Đăng nhập thành công với mã 200"
+        }
+      ]
+    },
+    {
+      "name": "Gọi API lấy danh sách Tài sản Cảng cạn",
+      "method": "GET",
+      "endpoint": "/api/v1/asset/dry-port-assets?page=0&size=20",
+      "headers": {
+        "Authorization": "Bearer {{AUTH_TOKEN}}",
+        "Content-Type": "application/json"
+      },
+      "assertions": [
+        {
+          "type": "status",
+          "expected": 200,
+          "description": "API danh sách tài sản cảng cạn trả về mã 200 OK"
+        },
+        {
+          "type": "responseTime",
+          "maxMs": 5000,
+          "description": "Thời gian phản hồi không quá 5000ms"
+        },
+        {
+          "type": "fieldExists",
+          "path": "data",
+          "description": "Dữ liệu trả về phải chứa trường data"
+        }
+      ]
+    }
+  ]
+}

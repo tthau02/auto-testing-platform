@@ -5,10 +5,9 @@ import {
   AnyTestCase, 
   TestRunSummary, 
   TestCaseResult, 
-  TestStepResult,
-  parseTestCase 
+  TestStepResult
 } from '@auto-test/test-case-schema';
-import { loadProjectConfig, discoverTestCases } from '@auto-test/project-config';
+import { loadProjectConfig, loadProjectTestCases } from '@auto-test/project-config';
 import { saveReportFiles } from '@auto-test/report-engine';
 import { DynamicUIRunner } from './ui-runner.js';
 import { DynamicAPIRunner } from './api-runner.js';
@@ -55,23 +54,7 @@ export class TestEngineOrchestrator {
     fs.mkdirSync(reportsDir, { recursive: true });
 
     // Discover and filter test cases
-    const testFiles = discoverTestCases(projectDir, config);
-    const loadedTestCases: AnyTestCase[] = [];
-
-    for (const file of testFiles) {
-      try {
-        const content = fs.readFileSync(file, 'utf-8');
-        const parsed = JSON.parse(content);
-        const testCaseRes = parseTestCase(parsed);
-        if (testCaseRes.success) {
-          loadedTestCases.push(testCaseRes.data);
-        } else {
-          console.warn(`[WARN] Skipping invalid test case in ${file}: ${testCaseRes.error}`);
-        }
-      } catch (err: any) {
-        console.warn(`[WARN] Error reading test case file ${file}: ${err.message}`);
-      }
-    }
+    const loadedTestCases = loadProjectTestCases(projectDir, config) as AnyTestCase[];
 
     // Filter test cases
     let testsToRun = loadedTestCases;
@@ -83,6 +66,19 @@ export class TestEngineOrchestrator {
     }
     if (options.tagFilter && options.tagFilter.length > 0) {
       testsToRun = testsToRun.filter(tc => tc.tags?.some(tag => options.tagFilter!.includes(tag)));
+    }
+
+    if (testsToRun.length === 0) {
+      throw new Error('No test cases matched the selected project and filters.');
+    }
+    const unreadyCases = testsToRun.filter(tc => 'automationReady' in tc && !tc.automationReady);
+    if (unreadyCases.length > 0) {
+      const firstError = unreadyCases
+        .map(tc => 'automationError' in tc ? tc.automationError : undefined)
+        .find((error): error is string => typeof error === 'string');
+      throw new Error(
+        `${unreadyCases.length} selected workbook test case(s) are not runnable. Add a start URL and valid browser steps in the Automation sheet before starting the browser run.${firstError ? ` First issue: ${firstError}` : ''}`
+      );
     }
 
     // Emit RUN_STARTED

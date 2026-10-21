@@ -6,13 +6,13 @@ import { fork } from 'node:child_process';
 import { 
   ProjectConfigSchema, 
   parseTestCase, 
-  AnyTestCase, 
   TestRunSummary 
 } from '@auto-test/test-case-schema';
 import { 
   loadProjectConfig, 
   safeResolvePath, 
-  discoverTestCases 
+  discoverTestCases,
+  loadProjectTestCases
 } from '@auto-test/project-config';
 import { loadReportSummary } from '@auto-test/report-engine';
 import { processManager } from './process-manager.js';
@@ -53,7 +53,7 @@ app.get('/api/projects', (req, res) => {
         if (fs.existsSync(configPath)) {
           try {
             const config = loadProjectConfig(projDir);
-            const testFiles = discoverTestCases(projDir, config);
+            const testCases = loadProjectTestCases(projDir, config);
             const reportsDir = path.join(projDir, 'reports');
             const reportsCount = fs.existsSync(reportsDir) 
               ? fs.readdirSync(reportsDir).filter(f => fs.statSync(path.join(reportsDir, f)).isDirectory()).length 
@@ -66,7 +66,7 @@ app.get('/api/projects', (req, res) => {
               baseUrl: config.baseUrl,
               apiBaseUrl: config.apiBaseUrl,
               environment: config.environment,
-              testCount: testFiles.length,
+              testCount: testCases.length,
               reportsCount,
               config
             });
@@ -183,23 +183,7 @@ app.get('/api/projects/:id/test-cases', (req, res) => {
   try {
     const projectDir = safeResolvePath(PROJECTS_ROOT, req.params.id);
     const config = loadProjectConfig(projectDir);
-    const testFiles = discoverTestCases(projectDir, config);
-    const testCases: AnyTestCase[] = [];
-
-    for (const file of testFiles) {
-      try {
-        const content = fs.readFileSync(file, 'utf-8');
-        const parsed = JSON.parse(content);
-        const testRes = parseTestCase(parsed);
-        if (testRes.success) {
-          testCases.push(testRes.data);
-        }
-      } catch {
-        // Skip unparseable
-      }
-    }
-
-    res.json(testCases);
+    res.json(loadProjectTestCases(projectDir, config));
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
@@ -208,6 +192,11 @@ app.get('/api/projects/:id/test-cases', (req, res) => {
 app.post('/api/projects/:id/test-cases', (req, res) => {
   try {
     const projectDir = safeResolvePath(PROJECTS_ROOT, req.params.id);
+    const projectConfig = loadProjectConfig(projectDir);
+    if (projectConfig.testWorkbook) {
+      res.status(409).json({ error: 'This project uses its Excel workbook as the test case source. Edit the Automation sheet in the workbook to add or change browser steps.' });
+      return;
+    }
     const parsed = parseTestCase(req.body);
     if (!parsed.success) {
       res.status(400).json({ error: 'Invalid test case format', details: parsed.error });
@@ -231,6 +220,10 @@ app.delete('/api/projects/:id/test-cases/:testId', (req, res) => {
   try {
     const projectDir = safeResolvePath(PROJECTS_ROOT, req.params.id);
     const config = loadProjectConfig(projectDir);
+    if (config.testWorkbook) {
+      res.status(409).json({ error: 'Test cases are managed in the configured Excel workbook.' });
+      return;
+    }
     const testFiles = discoverTestCases(projectDir, config);
     let deleted = false;
 
@@ -287,6 +280,22 @@ app.post('/api/runs', (req, res) => {
     } catch (error) {
       res.status(400).json({ error: (error as Error).message });
       return;
+    }
+
+    if (targetConfig.testWorkbook) {
+      const selectedCases = loadProjectTestCases(projectDir, targetConfig)
+        .filter(testCase => testCaseIds.includes(testCase.id));
+      const unreadyCases = selectedCases.filter(testCase => 'automationReady' in testCase && !testCase.automationReady);
+      if (selectedCases.length !== testCaseIds.length) {
+        res.status(400).json({ error: 'Một hoặc nhiều test case đã chọn không tồn tại trong workbook.' });
+        return;
+      }
+      if (unreadyCases.length > 0) {
+        res.status(400).json({
+          error: `${unreadyCases.length} test case chưa có URL bắt đầu và browser steps hợp lệ trong sheet Automation. Chưa khởi chạy browser.`
+        });
+        return;
+      }
     }
 
     console.info(`[Execute Test] Dashboard URL: ${dashboardUrl}`);

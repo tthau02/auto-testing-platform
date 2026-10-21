@@ -1,0 +1,63 @@
+{
+  "id": "API_DRY_PORT_COUNTS_003",
+  "name": "Lấy số lượng đếm hồ sơ Cảng cạn theo từng trạng thái phê duyệt (Status Tabs Counts)",
+  "description": "Gọi API /api/v1/asset/infra-assets/counts?moduleAssetType=DRY_PORT để kiểm tra các con số hiển thị trên dãy Tab trạng thái",
+  "type": "api",
+  "module": "Tài sản Cảng cạn - Thống kê trạng thái",
+  "priority": "high",
+  "tags": ["api", "dry-port", "counts", "tabs"],
+  "steps": [
+    {
+      "name": "Đăng nhập lấy Access Token",
+      "method": "POST",
+      "endpoint": "/api/auth/login",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "username": "{{ADMIN_USERNAME}}",
+        "password": "{{ADMIN_PASSWORD}}",
+        "captchaCode": "00000"
+      },
+      "extractVariables": [
+        {
+          "name": "AUTH_TOKEN",
+          "path": "data.token"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "status",
+          "expected": 200,
+          "description": "Đăng nhập thành công với mã 200"
+        }
+      ]
+    },
+    {
+      "name": "Gọi API đếm số lượng hồ sơ theo trạng thái",
+      "method": "GET",
+      "endpoint": "/api/v1/asset/infra-assets/counts?moduleAssetType=DRY_PORT",
+      "headers": {
+        "Authorization": "Bearer {{AUTH_TOKEN}}",
+        "Content-Type": "application/json"
+      },
+      "assertions": [
+        {
+          "type": "status",
+          "expected": 200,
+          "description": "API counts trả về mã 200 OK"
+        },
+        {
+          "type": "responseTime",
+          "maxMs": 3000,
+          "description": "Thời gian phản hồi không quá 3000ms"
+        },
+        {
+          "type": "fieldExists",
+          "path": "data",
+          "description": "Phải có trường data chứa số lượng theo từng key trạng thái"
+        }
+      ]
+    }
+  ]
+}

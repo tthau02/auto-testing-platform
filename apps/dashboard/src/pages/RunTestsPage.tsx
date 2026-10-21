@@ -8,7 +8,6 @@ import {
   Tag, 
   Typography, 
   Space, 
-  Alert, 
   message, 
   List,
   Checkbox
@@ -43,8 +42,10 @@ export const RunTestsPage: React.FC<RunTestsPageProps> = ({
   const [selectedTestIds, setSelectedTestIds] = useState<string[]>([]);
   const [headless, setHeadless] = useState<boolean>(false); // Default to FALSE: Opens browser window so user can watch!
   const [slowMo, setSlowMo] = useState<number>(600); // 600ms default delay between steps for comfortable human observation
-  const [typeFilter, setTypeFilter] = useState<string>('all');
   const selectedProject = projects.find(project => project.id === selectedProjectId);
+  const workbookSource = Boolean(selectedProject?.config?.testWorkbook);
+  const runnableTestCases = testCases.filter(testCase => testCase.automationReady !== false);
+  const unreadyTestCaseCount = testCases.length - runnableTestCases.length;
   const environmentNames = [...new Set([
     selectedProject?.environment || 'local',
     ...Object.keys(selectedProject?.config?.environments || {})
@@ -92,10 +93,11 @@ export const RunTestsPage: React.FC<RunTestsPageProps> = ({
     try {
       const data = await api.getTestCases(projId);
       setTestCases(data);
+      const runnableIds = data.filter(testCase => testCase.automationReady !== false).map(testCase => testCase.id);
       if (initialTestCaseIds && initialTestCaseIds.length > 0) {
-        setSelectedTestIds(initialTestCaseIds);
+        setSelectedTestIds(initialTestCaseIds.filter(id => runnableIds.includes(id)));
       } else {
-        setSelectedTestIds(data.map(t => t.id));
+        setSelectedTestIds(runnableIds);
       }
     } catch (err: any) {
       message.error(`Failed to load test cases: ${err.message}`);
@@ -114,7 +116,12 @@ export const RunTestsPage: React.FC<RunTestsPageProps> = ({
       return;
     }
     if (selectedTestIds.length === 0) {
-      message.warning('Select at least one test case');
+      message.warning('Chưa có test case nào sẵn sàng chạy. Hãy bổ sung URL và browser steps trong sheet Automation.');
+      return;
+    }
+    const selectedCases = testCases.filter(testCase => selectedTestIds.includes(testCase.id));
+    if (selectedCases.some(testCase => testCase.automationReady === false)) {
+      message.error('Một số test case chưa có URL hoặc browser steps hợp lệ. Các case này chưa được chạy.');
       return;
     }
 
@@ -131,7 +138,6 @@ export const RunTestsPage: React.FC<RunTestsPageProps> = ({
         environmentId: selectedEnv,
         dashboardUrl: window.location.origin,
         testCaseIds: selectedTestIds,
-        typeFilter: typeFilter as any,
         headless,
         slowMo: headless ? 0 : slowMo
       });
@@ -238,28 +244,6 @@ export const RunTestsPage: React.FC<RunTestsPageProps> = ({
               />
             </div>
 
-            <div>
-              <Text strong style={{ color: '#94a3b8', display: 'block', marginBottom: 6 }}>Test Type Filter:</Text>
-              <Select 
-                value={typeFilter} 
-                onChange={setTypeFilter}
-                disabled={isRunning}
-                style={{ width: '100%' }}
-                options={[
-                  { label: 'All Types (UI, API, Visual)', value: 'all' },
-                  { label: 'UI Tests Only', value: 'ui' },
-                  { label: 'API Tests Only', value: 'api' },
-                  { label: 'Visual Regression Only', value: 'visual' }
-                ]}
-              />
-            </div>
-
-            <Alert
-              type="warning"
-              showIcon
-              message="Visual baselines are never changed automatically. Use the CLI --update-baselines option after reviewing screenshots to accept new baselines."
-            />
-
             {/* Live Observation & Browser Window Mode */}
             <div style={{
               background: '#0f172a',
@@ -271,9 +255,6 @@ export const RunTestsPage: React.FC<RunTestsPageProps> = ({
                 <div>
                   <Text strong style={{ color: '#38bdf8', display: 'block', fontSize: 13 }}>
                     🖥️ Mở trình duyệt trực tiếp (Headed)
-                  </Text>
-                  <Text type="secondary" style={{ fontSize: 11 }}>
-                    Bấm Launch Execution để mở cửa sổ Chromium riêng khi chạy UI, API hoặc Visual.
                   </Text>
                 </div>
                 <Switch 
@@ -306,14 +287,20 @@ export const RunTestsPage: React.FC<RunTestsPageProps> = ({
 
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                <Text strong style={{ color: '#94a3b8' }}>Select Test Cases ({selectedTestIds.length}/{testCases.length}):</Text>
+                <Text strong style={{ color: '#94a3b8' }}>
+                  Select runnable test cases ({selectedTestIds.length}/{runnableTestCases.length})
+                  {unreadyTestCaseCount > 0 && ` · ${unreadyTestCaseCount} need steps`}
+                </Text>
                 <Button 
                   type="link" 
                   size="small" 
-                  onClick={() => setSelectedTestIds(selectedTestIds.length === testCases.length ? [] : testCases.map(t => t.id))}
-                  disabled={isRunning}
+                  onClick={() => {
+                    const runnableIds = runnableTestCases.map(testCase => testCase.id);
+                    setSelectedTestIds(selectedTestIds.length === runnableIds.length ? [] : runnableIds);
+                  }}
+                  disabled={isRunning || runnableTestCases.length === 0}
                 >
-                  {selectedTestIds.length === testCases.length ? 'Deselect All' : 'Select All'}
+                  {runnableTestCases.length > 0 && selectedTestIds.length === runnableTestCases.length ? 'Deselect All' : 'Select All'}
                 </Button>
               </div>
 
@@ -332,10 +319,10 @@ export const RunTestsPage: React.FC<RunTestsPageProps> = ({
                   style={{ display: 'flex', flexDirection: 'column', gap: 6 }}
                 >
                   {testCases.map(tc => (
-                    <Checkbox key={tc.id} value={tc.id}>
+                    <Checkbox key={tc.id} value={tc.id} disabled={tc.automationReady === false}>
                       <span style={{ fontSize: 13, color: '#f8fafc' }}>
-                        <Tag color={tc.type === 'ui' ? 'blue' : 'green'} style={{ fontSize: 10, marginRight: 4 }}>
-                          {tc.type.toUpperCase()}
+                        <Tag color={tc.automationReady === false ? 'orange' : workbookSource ? 'blue' : tc.type === 'ui' ? 'blue' : 'green'} style={{ fontSize: 10, marginRight: 4 }}>
+                          {tc.automationReady === false ? 'NEEDS STEPS' : workbookSource ? 'BROWSER' : tc.type.toUpperCase()}
                         </Tag>
                         {tc.name}
                       </span>
@@ -343,6 +330,11 @@ export const RunTestsPage: React.FC<RunTestsPageProps> = ({
                   ))}
                 </Checkbox.Group>
               </div>
+              {testCases.length > 0 && testCases.every(testCase => testCase.automationReady === false) && (
+                <Text type="warning" style={{ display: 'block', marginTop: 8, fontSize: 12 }}>
+                  Chưa có case nào sẵn sàng chạy. Mở Excel → sheet Automation, điền URL bắt đầu và ít nhất một browser step cho từng case cần chạy.
+                </Text>
+              )}
             </div>
 
             {/* Launch / Stop Button */}

@@ -52,6 +52,7 @@ export const TestCasesPage: React.FC<TestCasesPageProps> = ({ initialProjectId, 
   // Modal for Swagger
   const [swaggerModalVisible, setSwaggerModalVisible] = useState(false);
   const [swaggerUrl, setSwaggerUrl] = useState('http://localhost:3000/api/docs/swagger.json');
+  const workbookSource = Boolean(projects.find(project => project.id === selectedProjectId)?.config?.testWorkbook);
 
   useEffect(() => {
     loadProjects();
@@ -130,7 +131,7 @@ export const TestCasesPage: React.FC<TestCasesPageProps> = ({ initialProjectId, 
   const filteredTests = testCases.filter(tc => {
     const matchesSearch = tc.id.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           tc.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesType = typeFilter === 'all' || tc.type === typeFilter;
+    const matchesType = workbookSource || typeFilter === 'all' || tc.type === typeFilter;
     return matchesSearch && matchesType;
   });
 
@@ -142,13 +143,12 @@ export const TestCasesPage: React.FC<TestCasesPageProps> = ({ initialProjectId, 
       render: (id: string) => <code style={{ color: '#38bdf8', fontWeight: 600 }}>{id}</code>
     },
     {
-      title: 'Type',
+      title: workbookSource ? 'Automation' : 'Type',
       dataIndex: 'type',
       key: 'type',
-      render: (type: string) => {
-        const color = type === 'ui' ? 'blue' : type === 'api' ? 'green' : 'purple';
-        return <Tag color={color} style={{ fontWeight: 600 }}>{type.toUpperCase()}</Tag>;
-      }
+      render: (_type: string, record: TestCaseItem) => workbookSource
+        ? <Tag color={record.automationReady ? 'green' : 'orange'}>{record.automationReady ? 'READY' : 'NEEDS STEPS'}</Tag>
+        : <Tag color={_type === 'ui' ? 'blue' : _type === 'api' ? 'green' : 'purple'} style={{ fontWeight: 600 }}>{_type.toUpperCase()}</Tag>
     },
     {
       title: 'Name & Description',
@@ -196,18 +196,20 @@ export const TestCasesPage: React.FC<TestCasesPageProps> = ({ initialProjectId, 
             type="primary" 
             size="small" 
             icon={<PlayCircleOutlined />} 
+            disabled={record.automationReady === false}
+            title={record.automationReady === false ? record.automationError : undefined}
             onClick={() => onNavigate('run', { projectId: selectedProjectId, testCaseIds: [record.id] })}
           >
             Run
           </Button>
-          <Popconfirm 
+          {!workbookSource && <Popconfirm
             title="Delete test case?" 
             onConfirm={() => handleDeleteTestCase(record.id)}
             okText="Yes, delete"
             cancelText="Cancel"
           >
             <Button size="small" danger icon={<DeleteOutlined />} />
-          </Popconfirm>
+          </Popconfirm>}
         </Space>
       )
     }
@@ -215,7 +217,8 @@ export const TestCasesPage: React.FC<TestCasesPageProps> = ({ initialProjectId, 
 
   const rowSelection = {
     selectedRowKeys,
-    onChange: (keys: React.Key[]) => setSelectedRowKeys(keys)
+    onChange: (keys: React.Key[]) => setSelectedRowKeys(keys),
+    getCheckboxProps: (record: TestCaseItem) => ({ disabled: record.automationReady === false })
   };
 
   return (
@@ -224,16 +227,16 @@ export const TestCasesPage: React.FC<TestCasesPageProps> = ({ initialProjectId, 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
         <div>
           <Title level={3} style={{ margin: 0, color: '#f8fafc' }}>Test Cases Repository</Title>
-          <Text style={{ color: '#94a3b8' }}>Standardized schema test cases for UI, API, and Visual testing</Text>
+          <Text style={{ color: '#94a3b8' }}>{workbookSource ? 'Đọc trực tiếp từ Excel; bổ sung URL, action và locator trong sheet Automation để bật chạy.' : 'Test case repository'}</Text>
         </div>
         <Space>
-          <Button 
+          {!workbookSource && <Button
             icon={<ApiOutlined />} 
             onClick={() => setSwaggerModalVisible(true)}
           >
             Import from OpenAPI/Swagger
-          </Button>
-          <Button 
+          </Button>}
+          {!workbookSource && <Button
             type="primary" 
             icon={<PlusOutlined />} 
             style={{ background: '#0284c7' }}
@@ -254,7 +257,7 @@ export const TestCasesPage: React.FC<TestCasesPageProps> = ({ initialProjectId, 
             }}
           >
             Create / Import JSON
-          </Button>
+          </Button>}
         </Space>
       </div>
 
@@ -279,7 +282,7 @@ export const TestCasesPage: React.FC<TestCasesPageProps> = ({ initialProjectId, 
             style={{ width: 260 }}
           />
 
-          <div>
+          {!workbookSource && <div>
             <Text style={{ color: '#94a3b8', marginRight: 8 }}>Type:</Text>
             <Select 
               value={typeFilter} 
@@ -292,7 +295,7 @@ export const TestCasesPage: React.FC<TestCasesPageProps> = ({ initialProjectId, 
                 { label: 'Visual', value: 'visual' }
               ]}
             />
-          </div>
+          </div>}
 
           {selectedRowKeys.length > 0 && (
             <Button 
@@ -333,8 +336,8 @@ export const TestCasesPage: React.FC<TestCasesPageProps> = ({ initialProjectId, 
         {activeTestCase && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div>
-              <Text strong style={{ color: '#94a3b8' }}>Type: </Text>
-              <Tag color={activeTestCase.type === 'ui' ? 'blue' : 'green'}>{activeTestCase.type.toUpperCase()}</Tag>
+              <Text strong style={{ color: '#94a3b8' }}>{workbookSource ? 'Automation: ' : 'Type: '}</Text>
+              <Tag color={activeTestCase.automationReady === false ? 'orange' : 'blue'}>{activeTestCase.automationReady === false ? 'NEEDS STEPS' : workbookSource ? 'BROWSER' : activeTestCase.type.toUpperCase()}</Tag>
               <Text strong style={{ color: '#94a3b8', marginLeft: 16 }}>Priority: </Text>
               <Tag>{activeTestCase.priority}</Tag>
             </div>
@@ -346,6 +349,15 @@ export const TestCasesPage: React.FC<TestCasesPageProps> = ({ initialProjectId, 
               </div>
             )}
 
+            {activeTestCase.manualSteps?.length ? (
+              <div>
+                <Text strong style={{ color: '#94a3b8' }}>Các bước trong Excel:</Text>
+                <ol style={{ color: '#cbd5e1', paddingLeft: 22 }}>
+                  {activeTestCase.manualSteps.map((step, index) => <li key={index}>{step}</li>)}
+                </ol>
+              </div>
+            ) : null}
+
             {activeTestCase.startUrl && (
               <div>
                 <Text strong style={{ color: '#94a3b8' }}>Start URL:</Text>
@@ -356,7 +368,7 @@ export const TestCasesPage: React.FC<TestCasesPageProps> = ({ initialProjectId, 
             )}
 
             <div>
-              <Text strong style={{ color: '#94a3b8' }}>Execution Steps ({activeTestCase.steps?.length || 0}):</Text>
+              <Text strong style={{ color: '#94a3b8' }}>Automation Steps ({activeTestCase.steps?.length || 0}):</Text>
               <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {activeTestCase.steps?.map((step: any, idx: number) => (
                   <div 
@@ -387,7 +399,7 @@ export const TestCasesPage: React.FC<TestCasesPageProps> = ({ initialProjectId, 
                         Expected: <code>{step.expected}</code>
                       </div>
                     )}
-                    {step.endpoint && (
+                  {step.endpoint && (
                       <div style={{ fontSize: 12, color: '#cbd5e1', marginTop: 2 }}>
                         Endpoint: <code>{step.endpoint}</code>
                       </div>
@@ -401,6 +413,8 @@ export const TestCasesPage: React.FC<TestCasesPageProps> = ({ initialProjectId, 
               type="primary" 
               icon={<PlayCircleOutlined />}
               style={{ marginTop: 16, background: '#0284c7' }}
+              disabled={activeTestCase.automationReady === false}
+              title={activeTestCase.automationError}
               onClick={() => {
                 setDrawerVisible(false);
                 onNavigate('run', { projectId: selectedProjectId, testCaseIds: [activeTestCase.id] });

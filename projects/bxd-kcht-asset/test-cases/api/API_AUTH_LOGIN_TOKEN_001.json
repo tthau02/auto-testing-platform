@@ -1,0 +1,47 @@
+{
+  "id": "API_AUTH_LOGIN_TOKEN_001",
+  "name": "Đăng nhập hệ thống và trích xuất Access Token (JWT)",
+  "description": "Gửi request đăng nhập với thông tin tài khoản admin, xác minh mã phản hồi 200 và trích xuất AUTH_TOKEN để cấp quyền cho các request nghiệp vụ tiếp theo",
+  "type": "api",
+  "module": "Xác thực & Phân quyền",
+  "priority": "critical",
+  "tags": ["smoke", "auth", "login", "token"],
+  "steps": [
+    {
+      "name": "Gửi yêu cầu đăng nhập",
+      "method": "POST",
+      "endpoint": "/api/auth/login",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "username": "{{ADMIN_USERNAME}}",
+        "password": "{{ADMIN_PASSWORD}}",
+        "captchaCode": "00000"
+      },
+      "extractVariables": [
+        {
+          "name": "AUTH_TOKEN",
+          "path": "data.token"
+        }
+      ],
+      "assertions": [
+        {
+          "type": "status",
+          "expected": 200,
+          "description": "Mã trạng thái phản hồi phải là 200 OK"
+        },
+        {
+          "type": "responseTime",
+          "maxMs": 5000,
+          "description": "Thời gian phản hồi không vượt quá 5000ms"
+        },
+        {
+          "type": "fieldExists",
+          "path": "data.token",
+          "description": "Payload phản hồi phải chứa JWT token tại data.token"
+        }
+      ]
+    }
+  ]
+}

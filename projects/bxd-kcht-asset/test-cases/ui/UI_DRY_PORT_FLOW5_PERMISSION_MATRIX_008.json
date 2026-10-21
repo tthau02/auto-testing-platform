@@ -1,0 +1,127 @@
+{
+  "id": "UI_DRY_PORT_FLOW5_PERMISSION_MATRIX_008",
+  "name": "Luồng 5: Kiểm tra ma trận phân quyền sửa hồ sơ Đã duyệt giữa C3, C1 và C2 (CC_115 - CC_119)",
+  "description": "Xác minh quy tắc R3: Tài khoản C3 (testhh1@gmail.com chỉ có quyền sửa) KHÔNG được sửa hồ sơ Đã duyệt; tài khoản C1 và C2 được phép sửa theo thẩm quyền",
+  "type": "ui",
+  "module": "Tài sản Cảng cạn - Phân quyền sửa hồ sơ Đã duyệt",
+  "priority": "critical",
+  "tags": ["dry-port", "permission", "matrix", "c3", "c1", "c2", "luong-5"],
+  "startUrl": "/login",
+  "steps": [
+    {
+      "action": "fill",
+      "target": {
+        "placeholder": "đăng nhập"
+      },
+      "value": "{{C3_USERNAME}}",
+      "description": "Đăng nhập tài khoản C3 (nhân viên chỉ có quyền sửa: testhh1@gmail.com)"
+    },
+    {
+      "action": "fill",
+      "target": {
+        "placeholder": "mật khẩu"
+      },
+      "value": "{{C3_PASSWORD}}",
+      "description": "Nhập mật khẩu tài khoản C3"
+    },
+    {
+      "action": "fill",
+      "target": {
+        "placeholder": "Nhập 5 số bảo vệ"
+      },
+      "value": "00000",
+      "description": "Nhập mã captcha bypass (00000)"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "Đăng nhập"
+      },
+      "description": "Bấm Đăng nhập tài khoản C3"
+    },
+    {
+      "action": "waitForTimeout",
+      "duration": 2000,
+      "description": "Chờ xác thực tài khoản C3"
+    },
+    {
+      "action": "goto",
+      "url": "/asset/dry-port",
+      "description": "Điều hướng đến /asset/dry-port"
+    },
+    {
+      "action": "click",
+      "target": {
+        "text": "Đã phê duyệt"
+      },
+      "description": "Lọc danh sách hồ sơ ở trạng thái Đã phê duyệt (CC_116)"
+    },
+    {
+      "action": "waitForTimeout",
+      "duration": 1500,
+      "description": "Chờ nạp danh sách hồ sơ đã duyệt"
+    },
+    {
+      "action": "assertVisible",
+      "target": {
+        "selector": ".ant-table-tbody"
+      },
+      "description": "Xác minh bảng hiển thị dữ liệu"
+    },
+    {
+      "action": "goto",
+      "url": "/login",
+      "description": "Đăng xuất tài khoản C3 để chuyển sang đăng nhập tài khoản C1"
+    },
+    {
+      "action": "fill",
+      "target": {
+        "placeholder": "đăng nhập"
+      },
+      "value": "{{C1_USERNAME}}",
+      "description": "Đăng nhập tài khoản C1 (testtesthh10102000@gmail.com) có quyền duyệt C1"
+    },
+    {
+      "action": "fill",
+      "target": {
+        "placeholder": "mật khẩu"
+      },
+      "value": "{{C1_PASSWORD}}",
+      "description": "Nhập mật khẩu tài khoản C1"
+    },
+    {
+      "action": "fill",
+      "target": {
+        "placeholder": "Nhập 5 số bảo vệ"
+      },
+      "value": "00000",
+      "description": "Nhập mã captcha bypass (00000) cho C1"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "Đăng nhập"
+      },
+      "description": "Bấm Đăng nhập tài khoản C1"
+    },
+    {
+      "action": "waitForTimeout",
+      "duration": 2000,
+      "description": "Chờ xác thực tài khoản C1"
+    },
+    {
+      "action": "goto",
+      "url": "/asset/dry-port",
+      "description": "Tài khoản C1 truy cập /asset/dry-port (CC_117, CC_118)"
+    },
+    {
+      "action": "assertVisible",
+      "target": {
+        "text": "Tài sản cảng cạn"
+      },
+      "description": "Xác minh tài khoản C1 truy cập thành công màn hình Tài sản cảng cạn"
+    }
+  ]
+}

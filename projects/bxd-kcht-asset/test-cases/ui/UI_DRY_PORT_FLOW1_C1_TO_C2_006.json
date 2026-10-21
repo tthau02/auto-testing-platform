@@ -1,0 +1,180 @@
+{
+  "id": "UI_DRY_PORT_FLOW1_C1_TO_C2_006",
+  "name": "Luồng 1: Quy trình phê duyệt chuẩn 2 cấp C1 → C2 → Đã duyệt (CC_99 - CC_104)",
+  "description": "Đăng nhập tài khoản C1 (testtesthh10102000@gmail.com) tạo hồ sơ lưu tạm, gửi phê duyệt C1, tự phê duyệt C1; sau đó đăng nhập tài khoản C2 (testhh0@gmail.com) phê duyệt cấp Cục chuyển thành Đã duyệt",
+  "type": "ui",
+  "module": "Tài sản Cảng cạn - Luồng phê duyệt C1/C2",
+  "priority": "critical",
+  "tags": ["dry-port", "workflow", "c1", "c2", "approval", "luong-1"],
+  "startUrl": "/login",
+  "steps": [
+    {
+      "action": "fill",
+      "target": {
+        "placeholder": "đăng nhập"
+      },
+      "value": "{{C1_USERNAME}}",
+      "description": "Đăng nhập bằng tài khoản Cấp 1 (Cảng vụ / Chi cục: testtesthh10102000@gmail.com)"
+    },
+    {
+      "action": "fill",
+      "target": {
+        "placeholder": "mật khẩu"
+      },
+      "value": "{{C1_PASSWORD}}",
+      "description": "Nhập mật khẩu tài khoản C1"
+    },
+    {
+      "action": "fill",
+      "target": {
+        "placeholder": "Nhập 5 số bảo vệ"
+      },
+      "value": "00000",
+      "description": "Nhập mã captcha bypass (00000)"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "Đăng nhập"
+      },
+      "description": "Bấm Đăng nhập tài khoản C1"
+    },
+    {
+      "action": "waitForTimeout",
+      "duration": 2000,
+      "description": "Chờ xác thực tài khoản C1 thành công"
+    },
+    {
+      "action": "goto",
+      "url": "/asset/dry-port",
+      "description": "Điều hướng đến màn hình Quản lý Tài sản Cảng cạn (/asset/dry-port)"
+    },
+    {
+      "action": "assertUrl",
+      "expected": "/asset/dry-port",
+      "description": "Xác minh URL chính xác"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "Thêm mới"
+      },
+      "description": "Bấm nút Thêm mới mở Drawer tạo hồ sơ cảng cạn (CC_99)"
+    },
+    {
+      "action": "assertVisible",
+      "target": {
+        "text": "Thông tin chung"
+      },
+      "description": "Xác minh Drawer mở ra với Tab Thông tin chung"
+    },
+    {
+      "action": "assertVisible",
+      "target": {
+        "role": "button",
+        "name": "Lưu tạm"
+      },
+      "description": "Xác minh tài khoản C1 có nút Lưu tạm (CC_99)"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "Đóng"
+      },
+      "description": "Đóng Drawer"
+    },
+    {
+      "action": "click",
+      "target": {
+        "text": "Lưu tạm"
+      },
+      "description": "Chuyển sang Tab trạng thái Lưu tạm (DRAFT) để kiểm tra danh sách hồ sơ nháp"
+    },
+    {
+      "action": "waitForTimeout",
+      "duration": 1000,
+      "description": "Chờ nạp danh sách hồ sơ Lưu tạm"
+    },
+    {
+      "action": "click",
+      "target": {
+        "text": "Chờ phê duyệt cấp Cảng vụ/Chi cục"
+      },
+      "description": "Chuyển sang Tab Chờ phê duyệt cấp Cảng vụ/Chi cục (CC_101, CC_102)"
+    },
+    {
+      "action": "waitForTimeout",
+      "duration": 1000,
+      "description": "Chờ nạp danh sách hồ sơ chờ C1 duyệt"
+    },
+    {
+      "action": "goto",
+      "url": "/login",
+      "description": "Đăng xuất tài khoản C1 để chuyển sang đăng nhập tài khoản C2"
+    },
+    {
+      "action": "fill",
+      "target": {
+        "placeholder": "đăng nhập"
+      },
+      "value": "{{C2_USERNAME}}",
+      "description": "Đăng nhập bằng tài khoản Cấp 2 (Cục Hàng hải: testhh0@gmail.com)"
+    },
+    {
+      "action": "fill",
+      "target": {
+        "placeholder": "mật khẩu"
+      },
+      "value": "{{C2_PASSWORD}}",
+      "description": "Nhập mật khẩu tài khoản C2"
+    },
+    {
+      "action": "fill",
+      "target": {
+        "placeholder": "Nhập 5 số bảo vệ"
+      },
+      "value": "00000",
+      "description": "Nhập mã captcha bypass (00000) cho tài khoản C2"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "Đăng nhập"
+      },
+      "description": "Bấm Đăng nhập tài khoản C2"
+    },
+    {
+      "action": "waitForTimeout",
+      "duration": 2000,
+      "description": "Chờ xác thực tài khoản C2"
+    },
+    {
+      "action": "goto",
+      "url": "/asset/dry-port",
+      "description": "Tài khoản C2 truy cập màn hình /asset/dry-port"
+    },
+    {
+      "action": "click",
+      "target": {
+        "text": "Chờ phê duyệt cấp Cục"
+      },
+      "description": "Kiểm tra Tab 'Chờ phê duyệt cấp Cục' với tư cách người duyệt C2 (CC_104)"
+    },
+    {
+      "action": "waitForTimeout",
+      "duration": 1000,
+      "description": "Chờ nạp danh sách hồ sơ chờ C2 duyệt"
+    },
+    {
+      "action": "assertVisible",
+      "target": {
+        "text": "Đã phê duyệt"
+      },
+      "description": "Xác minh Tab Đã phê duyệt hiển thị đầy đủ"
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "id": "bxd-kcht-asset",
+  "name": "BXD Hàng hải - Quản lý Tài sản KCHT (Cảng cạn)",
+  "description": "Tự động kiểm thử trên trình duyệt theo workbook Test_case_tai_san_cang_can.xlsx",
+  "baseUrl": "http://localhost:3001",
+  "apiBaseUrl": "http://localhost:8080",
+  "environment": "local",
+  "testWorkbook": "../../Test_case_tai_san_cang_can.xlsx",
+  "testDirectories": [],
+  "features": {
+    "uiTesting": true,
+    "apiTesting": false,
+    "visualTesting": false
+  },
+  "viewports": [
+    {
+      "name": "desktop",
+      "width": 1440,
+      "height": 900
+    }
+  ],
+  "timeouts": {
+    "test": 35000,
+    "action": 10000,
+    "navigation": 30000
+  },
+  "variables": {
+    "ADMIN_USERNAME": "admin",
+    "ADMIN_PASSWORD": "Asdqwe@123",
+    "C1_USERNAME": "testtesthh10102000@gmail.com",
+    "C1_PASSWORD": "Asdqwe@123",
+    "C2_USERNAME": "testhh0@gmail.com",
+    "C2_PASSWORD": "Asdqwe@123",
+    "C3_USERNAME": "testhh1@gmail.com",
+    "C3_PASSWORD": "Asdqwe@123"
+  },
+  "security": {
+    "allowlistHosts": [
+      "localhost",
+      "127.0.0.1"
+    ],
+    "preventDestructiveActions": true
+  }
+}

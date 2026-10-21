@@ -1,0 +1,124 @@
+{
+  "id": "UI_DRY_PORT_LIST_FILTER_001",
+  "name": "Kiểm tra hiển thị danh sách và bộ lọc tìm kiếm Tài sản Cảng cạn (CC_1 - CC_7)",
+  "description": "Đăng nhập hệ thống, truy cập màn hình /asset/dry-port, xác minh Breadcrumb, các nút điều khiển, thanh Tab trạng thái, bộ lọc Sidebar và bảng dữ liệu",
+  "type": "ui",
+  "module": "Tài sản Cảng cạn - Danh sách & Bộ lọc",
+  "priority": "critical",
+  "tags": ["smoke", "dry-port", "list", "filter"],
+  "startUrl": "/login",
+  "steps": [
+    {
+      "action": "fill",
+      "target": {
+        "placeholder": "đăng nhập"
+      },
+      "value": "{{ADMIN_USERNAME}}",
+      "description": "Nhập tên đăng nhập admin"
+    },
+    {
+      "action": "fill",
+      "target": {
+        "placeholder": "mật khẩu"
+      },
+      "value": "{{ADMIN_PASSWORD}}",
+      "description": "Nhập mật khẩu"
+    },
+    {
+      "action": "fill",
+      "target": {
+        "placeholder": "Nhập 5 số bảo vệ"
+      },
+      "value": "00000",
+      "description": "Nhập mã captcha bypass tự động (00000) trong môi trường test"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "Đăng nhập"
+      },
+      "description": "Nhấp nút Đăng nhập"
+    },
+    {
+      "action": "waitForTimeout",
+      "duration": 2000,
+      "description": "Chờ xác thực hoàn tất và chuyển trang"
+    },
+    {
+      "action": "goto",
+      "url": "/asset/dry-port",
+      "description": "Điều hướng tới trang Quản lý Tài sản Cảng cạn (/asset/dry-port)"
+    },
+    {
+      "action": "assertUrl",
+      "expected": "/asset/dry-port",
+      "description": "Xác minh URL điều hướng chính xác"
+    },
+    {
+      "action": "assertVisible",
+      "target": {
+        "text": "Tài sản cảng cạn"
+      },
+      "description": "Xác minh tiêu đề màn hình 'Tài sản cảng cạn' hiển thị trên Breadcrumb (CC_1)"
+    },
+    {
+      "action": "assertVisible",
+      "target": {
+        "text": "Quản lý tài sản KCHT hàng hải"
+      },
+      "description": "Xác minh Breadcrumb cấp cha 'Quản lý tài sản KCHT hàng hải' hiển thị"
+    },
+    {
+      "action": "assertVisible",
+      "target": {
+        "role": "button",
+        "name": "Thêm mới"
+      },
+      "description": "Xác minh nút hành động 'Thêm mới' hiển thị (CC_5)"
+    },
+    {
+      "action": "assertVisible",
+      "target": {
+        "text": "Tất cả"
+      },
+      "description": "Xác minh Tab trạng thái 'Tất cả' hiển thị"
+    },
+    {
+      "action": "assertVisible",
+      "target": {
+        "placeholder": "Tìm theo tên tài sản"
+      },
+      "description": "Xác minh ô tìm kiếm cơ bản theo tên tài sản hiển thị trên Sidebar (CC_2, CC_3)"
+    },
+    {
+      "action": "fill",
+      "target": {
+        "placeholder": "Tìm theo tên tài sản"
+      },
+      "value": "Cảng cạn",
+      "description": "Nhập từ khóa tìm kiếm thử nghiệm 'Cảng cạn' (CC_3)"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "Tìm kiếm"
+      },
+      "description": "Nhấp nút 'Tìm kiếm' để lọc danh sách"
+    },
+    {
+      "action": "waitForTimeout",
+      "duration": 1500,
+      "description": "Chờ danh sách cập nhật kết quả lọc"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "Làm mới"
+      },
+      "description": "Nhấp nút 'Làm mới' để reset bộ lọc"
+    }
+  ]
+}

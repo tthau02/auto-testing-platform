@@ -1,0 +1,97 @@
+{
+  "id": "UI_DRY_PORT_APPROVAL_WORKFLOW_005",
+  "name": "Kiểm tra điều hướng các trạng thái phê duyệt C1, C2 và từ chối (CC_99 - CC_119)",
+  "description": "Kiểm tra chuyển đổi qua lại giữa các tab phê duyệt: Chờ phê duyệt cấp Cảng vụ/Chi cục, Chờ phê duyệt cấp Cục, Bị từ chối và Lưu tạm",
+  "type": "ui",
+  "module": "Tài sản Cảng cạn - Luồng Phê duyệt",
+  "priority": "critical",
+  "tags": ["dry-port", "approval", "workflow", "c1", "c2"],
+  "startUrl": "/login",
+  "steps": [
+    {
+      "action": "fill",
+      "target": {
+        "placeholder": "đăng nhập"
+      },
+      "value": "{{ADMIN_USERNAME}}",
+      "description": "Nhập tên đăng nhập"
+    },
+    {
+      "action": "fill",
+      "target": {
+        "placeholder": "mật khẩu"
+      },
+      "value": "{{ADMIN_PASSWORD}}",
+      "description": "Nhập mật khẩu"
+    },
+    {
+      "action": "fill",
+      "target": {
+        "placeholder": "Nhập 5 số bảo vệ"
+      },
+      "value": "00000",
+      "description": "Nhập mã captcha bypass (00000)"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "Đăng nhập"
+      },
+      "description": "Bấm Đăng nhập"
+    },
+    {
+      "action": "waitForTimeout",
+      "duration": 2000,
+      "description": "Chờ chuyển trang sau đăng nhập"
+    },
+    {
+      "action": "goto",
+      "url": "/asset/dry-port",
+      "description": "Điều hướng đến /asset/dry-port"
+    },
+    {
+      "action": "click",
+      "target": {
+        "text": "Lưu tạm"
+      },
+      "description": "Nhấp Tab 'Lưu tạm' (CC_99, CC_112)"
+    },
+    {
+      "action": "waitForTimeout",
+      "duration": 1000,
+      "description": "Chờ lọc bản ghi lưu tạm"
+    },
+    {
+      "action": "click",
+      "target": {
+        "text": "Chờ phê duyệt cấp Cảng vụ/Chi cục"
+      },
+      "description": "Nhấp Tab 'Chờ phê duyệt cấp Cảng vụ/Chi cục' (CC_101)"
+    },
+    {
+      "action": "waitForTimeout",
+      "duration": 1000,
+      "description": "Chờ lọc bản ghi chờ C1 duyệt"
+    },
+    {
+      "action": "click",
+      "target": {
+        "text": "Chờ phê duyệt cấp Cục"
+      },
+      "description": "Nhấp Tab 'Chờ phê duyệt cấp Cục' (CC_102, CC_113)"
+    },
+    {
+      "action": "waitForTimeout",
+      "duration": 1000,
+      "description": "Chờ lọc bản ghi chờ C2 duyệt"
+    },
+    {
+      "action": "click",
+      "target": {
+        "text": "Tất cả"
+      },
+      "description": "Trở lại Tab 'Tất cả'"
+    }
+  ]
+}

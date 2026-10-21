@@ -112,6 +112,16 @@ Environment overrides must be defined under the project's `environments` map. Vi
 - `0`: All tests passed.
 - `1`: One or more tests failed or encountered execution errors.
 
+## Excel-Driven Browser Tests
+
+The `bxd-kcht-asset` project reads test cases from `Test_case_tai_san_cang_can.xlsx`. `Sheet1` contains the checklist; the `Automation` sheet defines the browser steps for each checklist ID. Cases without a start URL and valid browser steps are shown as “NEEDS STEPS” and cannot be launched, so they are not reported as failed test runs. Consecutive cases using the same login reuse the authenticated browser session; a `goto /login` step clears it when a workflow intentionally switches accounts. The target application runs at `http://localhost:3001` from `D:\hautt\bxd.hh.kcht\frontend`; its Vite proxy sends API requests to `http://127.0.0.1:8080`.
+
+Run the suite with:
+
+```bash
+npm run test:cli -- --project=bxd-kcht-asset
+```
+
 ---
 
 ## 📁 Adding a New Project (Zero Engine Modification)

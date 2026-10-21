@@ -1,6 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { ProjectConfig, ProjectConfigSchema } from '@auto-test/test-case-schema';
+import { AnyTestCase, parseTestCase, ProjectConfig, ProjectConfigSchema } from '@auto-test/test-case-schema';
+import { loadWorkbookTestCases, WorkbookTestCase } from './workbook.js';
+
+export { loadWorkbookTestCases, WorkbookTestCase } from './workbook.js';
 
 export interface ResolvedProject {
   config: ProjectConfig;
@@ -112,6 +115,29 @@ export function validateHostSecurity(config: ProjectConfig): void {
   }
 }
 
+/** Ensures a project-controlled browser navigation stays on an allowlisted host. */
+export function validateTargetUrl(config: ProjectConfig, url: string): string {
+  let target: URL;
+  try {
+    target = new URL(url, config.baseUrl);
+  } catch {
+    throw new Error(`Invalid browser navigation URL: ${url}`);
+  }
+  const allowlist = config.security?.allowlistHosts || ['localhost', '127.0.0.1'];
+  const hostname = target.hostname.toLowerCase();
+  const allowed = allowlist.length === 0 || allowlist.some(entry => {
+    if (entry === '*') return true;
+    const rule = entry.toLowerCase();
+    if (rule.startsWith('*.')) {
+      const suffix = rule.slice(2);
+      return hostname === suffix || hostname.endsWith(`.${suffix}`);
+    }
+    return hostname === rule;
+  });
+  if (!allowed) throw new Error(`Security Violation: Browser target host "${target.hostname}" is not in allowlist: [${allowlist.join(', ')}]`);
+  return target.toString();
+}
+
 /**
  * Finds all test case JSON files in the project's configured test directories
  */
@@ -127,6 +153,26 @@ export function discoverTestCases(projectDir: string, config: ProjectConfig): st
   }
 
   return testFiles;
+}
+
+/** Loads the configured workbook as the authoritative case source, or JSON cases for legacy projects. */
+export function loadProjectTestCases(projectDir: string, config: ProjectConfig): Array<AnyTestCase | WorkbookTestCase> {
+  if (config.testWorkbook) {
+    const workspaceRoot = path.resolve(projectDir, '..', '..');
+    return loadWorkbookTestCases(projectDir, config.testWorkbook, workspaceRoot);
+  }
+
+  const cases: AnyTestCase[] = [];
+  for (const file of discoverTestCases(projectDir, config)) {
+    try {
+      const parsed = JSON.parse(fs.readFileSync(file, 'utf-8'));
+      const result = parseTestCase(parsed);
+      if (result.success) cases.push(result.data);
+    } catch {
+      // Invalid and unreadable legacy JSON cases are ignored, matching the existing discovery behavior.
+    }
+  }
+  return cases;
 }
 
 function findJsonFilesRecursively(dir: string, fileList: string[]): void {
